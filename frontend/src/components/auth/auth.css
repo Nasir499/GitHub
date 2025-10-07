@@ -1,0 +1,99 @@
+/* --- Global Styles & Variables --- */
+:root {
+  --background-color: #0c1116;
+  --form-bg-color: #161a23;
+  --primary-text-color: #f1f6fd;
+  --input-border-color: #4a5568;
+  --accent-color: #3b82f6; /* Blue for links and focus highlights */
+  --font-family-main: 'Asap', sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-main);
+  background-color: var(--background-color);
+  color: var(--primary-text-color);
+}
+
+/* --- Main Layout --- */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  /* align-items: center; */
+  min-height: 90vh; /* Better than height: 100vh */
+  width: 100%;
+  gap: 5px; /* Creates space between logo and form */
+  /* padding: 20px; */
+  box-sizing: border-box;
+}
+
+/* --- Logo Styling --- */
+.login-logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0px !important;
+  /* align-items: center; */
+}
+
+.logo-login {
+  width: 64px; /* A bit larger for better visual balance */
+  height: auto;
+  opacity: 0.8;
+}
+
+/* --- Form Container --- */
+/* You can combine .login-box-wrapper and .login-box into one container in your JSX for simplicity */
+.login-box {
+  width: 100%;
+  max-width: 380px;
+  min-height: 300px;
+  padding: 40px;
+  border-radius: 10px;
+  background-color: var(--form-bg-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* This will stack the heading, inputs, and button vertically */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* --- Form Element Styling --- */
+.login-heading {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-text-color);
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+
+/* A container for each label-input pair */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--background-color);
+  border: 1px solid var(--input-border-color);
+  border-radius: 6px;
+  color: var(--primary-text-color);
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
