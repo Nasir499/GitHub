@@ -3,7 +3,8 @@ import User from '../models/user.model.js'
 import Issue from '../models/issue.model.js'
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
-import { s3, S3_BUCKET, ListObjectsV2Command, GetObjectCommand } from '../config/aws-config.js'
+import { v4 as uuidv4 } from 'uuid'
+import { s3, S3_BUCKET, ListObjectsV2Command, GetObjectCommand, DeleteObjectsCommand, PutObjectCommand } from '../config/aws-config.js'
 
 dotenv.config()
 
@@ -76,6 +77,20 @@ const deleteRepository = async (req, res) => {
         await Issue.deleteMany({ repository: id });
         await User.findByIdAndUpdate(repository.owner, { $pull: { repositories: id } });
         await Repository.findByIdAndDelete(id);
+
+        // Clean up S3 objects for this repository
+        try {
+            const listData = await s3.send(new ListObjectsV2Command({ Bucket: S3_BUCKET, Prefix: `repos/${id}/` }));
+            if (listData.Contents && listData.Contents.length > 0) {
+                const objectsToDelete = listData.Contents.map(obj => ({ Key: obj.Key }));
+                await s3.send(new DeleteObjectsCommand({
+                    Bucket: S3_BUCKET,
+                    Delete: { Objects: objectsToDelete }
+                }));
+            }
+        } catch (s3Err) {
+            console.error("S3 cleanup warning on repo delete:", s3Err);
+        }
 
         res.json({ message: "Repository deleted successfully" });
     } catch (error) {
@@ -176,12 +191,14 @@ const toggleVisibilityById = async (req, res) => {
     }
 };
 
-// Fetch pushed files from S3 bucket
+// Fetch pushed files from S3 scoped STRICTLY per repository ID
 const fetchRepositoryS3Files = async (req, res) => {
+    const repoId = req.params.id;
     try {
+        const prefix = `repos/${repoId}/`;
         const command = new ListObjectsV2Command({
             Bucket: S3_BUCKET,
-            Prefix: "commits/"
+            Prefix: prefix
         });
         const data = await s3.send(command);
 
@@ -193,11 +210,12 @@ const fetchRepositoryS3Files = async (req, res) => {
             .filter(item => !item.Key.endsWith('commit.json') && !item.Key.endsWith('/'))
             .map(item => {
                 const parts = item.Key.split('/');
-                const commitId = parts[1] || '';
-                const fileName = parts.slice(2).join('/') || parts[parts.length - 1];
+                // Expected format: repos/<repoId>/commits/<commitId>/<relativePath>
+                const commitId = parts.length > 3 ? parts[3] : '';
+                const relativePath = parts.length > 4 ? parts.slice(4).join('/') : parts[parts.length - 1];
                 return {
                     key: item.Key,
-                    name: fileName,
+                    name: relativePath,
                     commitId,
                     size: item.Size,
                     lastModified: item.LastModified
@@ -240,6 +258,72 @@ const fetchS3FileContent = async (req, res) => {
     }
 };
 
+// Push repo files endpoint — handles receiving code files over HTTP and uploading to S3 on behalf of user
+const pushRepoFiles = async (req, res) => {
+    const repoId = req.params.id;
+    const { commitMessage, files, commitId: providedCommitId } = req.body;
+
+    if (!files || !Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ message: "No files provided for push" });
+    }
+
+    try {
+        const repository = await Repository.findById(repoId);
+        if (!repository) {
+            return res.status(404).json({ message: "Repository not found" });
+        }
+
+        const commitId = providedCommitId || uuidv4();
+
+        // Save commit.json metadata to S3
+        const metaKey = `repos/${repoId}/commits/${commitId}/commit.json`;
+        const metaContent = JSON.stringify({
+            id: commitId,
+            message: commitMessage || "Uploaded via API",
+            date: new Date().toISOString(),
+            author: repository.owner
+        }, null, 2);
+
+        await s3.send(new PutObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: metaKey,
+            Body: metaContent
+        }));
+
+        // Upload files to S3 in parallel chunks for fast push performance
+        const CONCURRENCY = 15;
+        for (let i = 0; i < files.length; i += CONCURRENCY) {
+            const batch = files.slice(i, i + CONCURRENCY);
+            await Promise.all(batch.map(async (fileItem) => {
+                const { path: relativePath, content } = fileItem;
+                if (!relativePath) return;
+
+                const s3Key = `repos/${repoId}/commits/${commitId}/${relativePath.replace(/\\/g, '/')}`;
+                await s3.send(new PutObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: s3Key,
+                    Body: Buffer.from(content || '', 'utf-8')
+                }));
+
+                if (!repository.content.includes(relativePath)) {
+                    repository.content.push(relativePath);
+                }
+            }));
+        }
+
+        await repository.save();
+
+        res.json({
+            message: `Successfully pushed ${files.length} file(s) to S3!`,
+            commitId,
+            filesCount: files.length
+        });
+    } catch (error) {
+        console.error("Error during pushRepoFiles:", error);
+        res.status(500).json({ message: "Failed to push files to S3", error: error.message });
+    }
+};
+
 export {
     createRepository,
     updateRepository,
@@ -250,5 +334,6 @@ export {
     fetchRepositoryForCurrentUser,
     toggleVisibilityById,
     fetchRepositoryS3Files,
-    fetchS3FileContent
+    fetchS3FileContent,
+    pushRepoFiles
 }

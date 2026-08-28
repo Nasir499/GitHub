@@ -24,11 +24,12 @@
   margin-bottom: 8px;
 }
 
-.repo-detail-title {
+.title-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
 }
 
 .repo-detail-title h1 {
@@ -51,6 +52,25 @@
   font-weight: 600;
 }
 
+.btn-delete-repo {
+  margin-left: auto;
+  background-color: rgba(248, 81, 73, 0.12);
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-repo:hover {
+  background-color: #f85149;
+  color: #ffffff;
+  border-color: #f85149;
+}
+
 .repo-description {
   color: #8b949e;
   margin: 8px 0 4px 0;
@@ -61,6 +81,74 @@
   color: #8b949e;
   font-size: 13px;
   margin: 0;
+}
+
+/* CLI Quick Setup Banner */
+.cli-setup-banner {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.cli-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cli-banner-header h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin: 0;
+}
+
+.cli-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-number {
+  background-color: #238636;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.step-content {
+  flex-grow: 1;
+}
+
+.step-content h5 {
+  font-size: 13px;
+  font-weight: 600;
+  color: #58a6ff;
+  margin: 0 0 6px 0;
+}
+
+.cli-code-block {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  color: #3fb950;
 }
 
 .repo-detail-section {
@@ -80,6 +168,35 @@
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-refresh-files {
+  background-color: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-refresh-files:hover {
+  background-color: #30363d;
+  color: #58a6ff;
+  border-color: #58a6ff;
+}
+
+.btn-refresh-files.spinning {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
 .s3-cloud-badge {
   background-color: rgba(56, 139, 253, 0.12);
   color: #58a6ff;
@@ -90,10 +207,39 @@
   border-radius: 12px;
 }
 
-/* File Table */
+/* Folder Breadcrumb Navigation */
+.folder-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-bottom: none;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  font-size: 14px;
+}
+
+.breadcrumb-item {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.breadcrumb-item.clickable:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.breadcrumb-separator {
+  color: #8b949e;
+}
+
+/* File & Folder Table */
 .file-list-table {
   border: 1px solid #30363d;
-  border-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
   overflow: hidden;
   background-color: #161b22;
 }
@@ -133,6 +279,10 @@
   background-color: #1c2128;
 }
 
+.file-table-row.parent-row {
+  background-color: rgba(139, 148, 158, 0.08);
+}
+
 .file-name-cell {
   display: flex;
   align-items: center;
@@ -140,8 +290,13 @@
 }
 
 .file-name {
+  color: #c9d1d9;
+  font-weight: 400;
+}
+
+.file-name.folder-link {
   color: #58a6ff;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .file-commit-cell {

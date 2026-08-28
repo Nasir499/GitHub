@@ -6,7 +6,8 @@ import {
     updateUserProfile,
     getUserProfile,
     deleteUserProfile,
-    login
+    login,
+    getUserActivity
 } from '../controllers/user.controller.js';
 
 const userrouter = express.Router();
@@ -23,6 +24,7 @@ const selfOnly = (req, res, next) => {
 userrouter.get('/allUsers', getAllUsers)
 userrouter.post('/signup', signUp)
 userrouter.post('/login', login)
+userrouter.get('/user/activity/:userId', getUserActivity)
 
 // Protected routes
 userrouter.get('/getProfile/:id', authMiddleware, getUserProfile)

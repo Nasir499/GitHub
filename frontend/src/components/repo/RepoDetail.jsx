@@ -1,37 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import API from '../../api.js';
+import { useAuth } from '../../Authcontext.jsx';
 import Navbar from '../Navbar';
 import './repoDetail.css';
 
 function RepoDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const [repo, setRepo] = useState(null);
   const [s3Files, setS3Files] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileContent, setFileContent] = useState('');
   const [loadingFileContent, setLoadingFileContent] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [currentFolder, setCurrentFolder] = useState('');
 
-  useEffect(() => {
-    const fetchRepoAndFiles = async () => {
-      try {
-        const [repoRes, s3Res] = await Promise.all([
-          API.get(`/repo/${id}`),
-          API.get('/repo/s3-files').catch(() => ({ data: { files: [] } }))
-        ]);
-        setRepo(repoRes.data);
-        setS3Files(Array.isArray(s3Res.data?.files) ? s3Res.data.files : []);
-      } catch (err) {
-        console.error('Error fetching repository:', err);
-        setError('Repository not found or access denied');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRepoAndFiles();
+  const fetchRepoAndFiles = useCallback(async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
+    try {
+      const [repoRes, s3Res] = await Promise.all([
+        API.get(`/repo/${id}`),
+        API.get(`/repo/${id}/s3-files`).catch(() => ({ data: { files: [] } }))
+      ]);
+      setRepo(repoRes.data);
+      setS3Files(Array.isArray(s3Res.data?.files) ? s3Res.data.files : []);
+    } catch (err) {
+      console.error('Error fetching repository:', err);
+      setError('Repository not found or access denied');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [id]);
+
+  // Initial fetch on page load
+  useEffect(() => {
+    fetchRepoAndFiles();
+  }, [id, fetchRepoAndFiles]);
 
   const handleOpenFile = async (fileKey, fileName) => {
     setSelectedFile(fileName);
@@ -44,6 +53,20 @@ function RepoDetail() {
       setFileContent('Error loading file content from S3.');
     } finally {
       setLoadingFileContent(false);
+    }
+  };
+
+  const handleDeleteRepo = async () => {
+    if (!window.confirm(`Are you sure you want to delete "${repo.name}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await API.delete(`/repo/delete/${id}`);
+      navigate('/');
+    } catch (err) {
+      console.error('Error deleting repository:', err);
+      alert(err.response?.data?.message || 'Failed to delete repository');
     }
   };
 
@@ -73,10 +96,60 @@ function RepoDetail() {
     );
   }
 
-  const allFiles = [
-    ...(repo.content || []).map(f => ({ name: f, source: 'database' })),
-    ...s3Files.map(f => ({ ...f, source: 's3' }))
-  ];
+  const isOwner = currentUser === repo.owner?._id || currentUser === repo.owner;
+
+  // Deduplicate S3 files and DB content
+  const s3Names = new Set(s3Files.map(f => f.name));
+  const dbOnlyFiles = (repo.content || [])
+    .filter(f => !s3Names.has(f))
+    .map(f => ({ name: f, source: 'database' }));
+
+  const allFiles = [...s3Files, ...dbOnlyFiles];
+
+  // Helper to filter items for the current folder path
+  const getFolderContents = (files, currentPath) => {
+    const prefix = currentPath ? currentPath + '/' : '';
+    const folders = new Map();
+    const fileItems = [];
+
+    for (const file of files) {
+      if (prefix && !file.name.startsWith(prefix)) continue;
+
+      const relative = prefix ? file.name.slice(prefix.length) : file.name;
+      const parts = relative.split('/');
+
+      if (parts.length > 1) {
+        const folderName = parts[0];
+        if (!folders.has(folderName)) {
+          folders.set(folderName, {
+            displayName: folderName,
+            fullPath: prefix + folderName,
+            isFolder: true,
+            commitId: file.commitId,
+            lastModified: file.lastModified
+          });
+        }
+      } else if (parts.length === 1 && parts[0] !== '') {
+        fileItems.push({
+          ...file,
+          displayName: parts[0],
+          isFolder: false
+        });
+      }
+    }
+
+    return [...folders.values(), ...fileItems];
+  };
+
+  const visibleItems = getFolderContents(allFiles, currentFolder);
+
+  const navigateUp = () => {
+    const parts = currentFolder.split('/');
+    parts.pop();
+    setCurrentFolder(parts.join('/'));
+  };
+
+  const folderParts = currentFolder ? currentFolder.split('/') : [];
 
   return (
     <div className="repo-page">
@@ -85,24 +158,92 @@ function RepoDetail() {
         <div className="repo-detail-header">
           <div className="repo-detail-title">
             <Link to="/" className="repo-detail-back">&larr; Back</Link>
-            <h1>
-              <span className="repo-owner">{repo.owner?.username || 'Unknown'}</span>
-              <span className="repo-separator">/</span>
-              <span className="repo-name">{repo.name}</span>
-            </h1>
-            <span className={`visibility-badge ${repo.visibility ? 'public' : 'private'}`}>
-              {repo.visibility ? 'Public' : 'Private'}
-            </span>
+            <div className="title-row">
+              <h1>
+                <span className="repo-owner">{repo.owner?.username || 'Unknown'}</span>
+                <span className="repo-separator">/</span>
+                <span className="repo-name">{repo.name}</span>
+              </h1>
+              <span className={`visibility-badge ${repo.visibility ? 'public' : 'private'}`}>
+                {repo.visibility ? 'Public' : 'Private'}
+              </span>
+
+              {isOwner && (
+                <button className="btn-delete-repo" onClick={handleDeleteRepo}>
+                  🗑️ Delete Repository
+                </button>
+              )}
+            </div>
           </div>
           <p className="repo-description">{repo.description || 'No description provided.'}</p>
           <p className="repo-meta">Created: {new Date(repo.createdAt).toLocaleDateString()}</p>
         </div>
 
-        {/* Pushed Files Section */}
+        {/* Automated Installer Setup Banner */}
+        <div className="cli-setup-banner">
+          <div className="cli-banner-header">
+            <span className="terminal-icon">💻</span>
+            <h4>Quick Setup — Push code from terminal</h4>
+          </div>
+
+          <div className="cli-setup-steps">
+            <div className="cli-step">
+              <span className="step-number">1</span>
+              <div className="step-content">
+                <h5>Install mygit CLI on your computer (Run once in PowerShell)</h5>
+                <div className="cli-code-block">
+                  <code>powershell -c "irm http://localhost:3000/install.ps1 | iex"</code>
+                </div>
+              </div>
+            </div>
+
+            <div className="cli-step" style={{ marginTop: '14px' }}>
+              <span className="step-number">2</span>
+              <div className="step-content">
+                <h5>Initialize & push code from your project folder</h5>
+                <div className="cli-code-block">
+                  <code>mygit init {id}</code>
+                  <code>mygit add .</code>
+                  <code>mygit commit "Upload files by {repo.owner?.username || 'user'}"</code>
+                  <code>mygit push</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pushed Files & Folders Section */}
         <div className="repo-detail-section">
           <div className="section-header">
-            <h3>Files & Commits ({allFiles.length})</h3>
-            <span className="s3-cloud-badge">☁️ AWS S3 Synced</span>
+            <h3>Files & Directories ({allFiles.length})</h3>
+            <div className="header-actions">
+              <button
+                className={`btn-refresh-files ${refreshing ? 'spinning' : ''}`}
+                onClick={() => fetchRepoAndFiles(true)}
+                title="Refresh files list"
+              >
+                🔄 Refresh
+              </button>
+              <span className="s3-cloud-badge">☁️ AWS S3 Synced</span>
+            </div>
+          </div>
+
+          {/* Breadcrumb Navigation */}
+          <div className="folder-breadcrumb">
+            <span className="breadcrumb-item clickable" onClick={() => setCurrentFolder('')}>
+              📁 {repo.name}
+            </span>
+            {folderParts.map((part, idx) => {
+              const subPath = folderParts.slice(0, idx + 1).join('/');
+              return (
+                <React.Fragment key={subPath}>
+                  <span className="breadcrumb-separator">/</span>
+                  <span className="breadcrumb-item clickable" onClick={() => setCurrentFolder(subPath)}>
+                    {part}
+                  </span>
+                </React.Fragment>
+              );
+            })}
           </div>
 
           {allFiles.length > 0 ? (
@@ -113,25 +254,47 @@ function RepoDetail() {
                 <span>Size</span>
                 <span>Last Modified</span>
               </div>
-              {allFiles.map((file, index) => (
+
+              {/* Back to Parent Directory Button */}
+              {currentFolder && (
+                <div className="file-table-row clickable parent-row" onClick={navigateUp}>
+                  <div className="file-name-cell">
+                    <span className="file-icon">📁</span>
+                    <span className="file-name">..</span>
+                  </div>
+                  <span className="file-commit-cell">-</span>
+                  <span className="file-size-cell">-</span>
+                  <span className="file-date-cell">-</span>
+                </div>
+              )}
+
+              {visibleItems.map((item, index) => (
                 <div
                   key={index}
-                  className={`file-table-row ${file.key ? 'clickable' : ''}`}
-                  onClick={() => file.key && handleOpenFile(file.key, file.name)}
+                  className="file-table-row clickable"
+                  onClick={() => {
+                    if (item.isFolder) {
+                      setCurrentFolder(item.fullPath);
+                    } else if (item.key) {
+                      handleOpenFile(item.key, item.displayName || item.name);
+                    }
+                  }}
                 >
                   <div className="file-name-cell">
-                    <span className="file-icon">📄</span>
-                    <span className="file-name">{file.name}</span>
+                    <span className="file-icon">{item.isFolder ? '📁' : '📄'}</span>
+                    <span className={`file-name ${item.isFolder ? 'folder-link' : ''}`}>
+                      {item.displayName || item.name}
+                    </span>
                   </div>
                   <span className="file-commit-cell">
-                    {file.commitId ? file.commitId.slice(0, 8) : 'initial'}
+                    {item.commitId ? item.commitId.slice(0, 8) : 'latest'}
                   </span>
                   <span className="file-size-cell">
-                    {file.size ? `${(file.size / 1024).toFixed(1)} KB` : '-'}
+                    {item.isFolder ? '-' : item.size ? `${(item.size / 1024).toFixed(1)} KB` : '-'}
                   </span>
                   <span className="file-date-cell">
-                    {file.lastModified
-                      ? new Date(file.lastModified).toLocaleDateString()
+                    {item.lastModified
+                      ? new Date(item.lastModified).toLocaleDateString()
                       : '-'}
                   </span>
                 </div>
@@ -140,7 +303,7 @@ function RepoDetail() {
           ) : (
             <div className="empty-files-box">
               <span className="box-icon">📁</span>
-              <p>No pushed files yet. Run <code>node index.js push</code> in CLI to upload files to S3!</p>
+              <p>No pushed files yet. Follow the CLI commands above to push files!</p>
             </div>
           )}
         </div>

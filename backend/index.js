@@ -20,7 +20,14 @@ dotenv.config()
 
 yargs(hideBin(process.argv))
     .command('start','Starts a new server',{},startServer)
-    .command('init', 'Initialize the project', {}, initRepo)
+    .command('init [repoId]', 'Initialize the project with optional Repository ID', (yargs) => {
+        yargs.positional('repoId', {
+            describe: 'The Repository ID from the web app',
+            type: 'string'
+        })
+    }, (argv) => {
+        initRepo(argv.repoId);
+    })
     .command('add <file>', 'Add a new file', (yargs) => {
         yargs.positional('file', {
             describe: 'The file to add to staging area',
@@ -53,7 +60,8 @@ yargs(hideBin(process.argv))
         const app = express()
         const port = process.env.PORT || 8000;
 
-        app.use(express.json())
+        app.use(express.json({ limit: '50mb' }))
+        app.use(express.urlencoded({ limit: '50mb', extended: true }))
         app.use(morgan('tiny'))
 
         const mongoUrl = process.env.MONGODB_URI;

@@ -11,18 +11,20 @@ import {
     fetchRepositoryForCurrentUser,
     toggleVisibilityById,
     fetchRepositoryS3Files,
-    fetchS3FileContent
+    fetchS3FileContent,
+    pushRepoFiles
 } from '../controllers/repo.controller.js'
 
 const repoRouter = express.Router();
 
 // Public routes
 repoRouter.get('/repo/all', getAllRepositories)
-repoRouter.get('/repo/s3-files', fetchRepositoryS3Files)
+repoRouter.get('/repo/:id/s3-files', fetchRepositoryS3Files)
 repoRouter.get('/repo/s3-content', fetchS3FileContent)
 repoRouter.get('/repo/:id', fetchRepositoryById)
 repoRouter.get('/repo/name/:name', fetchRepositoryByName)
 repoRouter.get('/repo/user/:userId', fetchRepositoryForCurrentUser)
+repoRouter.post('/repo/:id/push', pushRepoFiles)
 
 // Protected routes
 repoRouter.post('/repo/create', authMiddleware, createRepository)

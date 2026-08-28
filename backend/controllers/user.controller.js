@@ -76,7 +76,6 @@ const updateUserProfile = async (req, res) => {
         if (email) updateFields.email = email;
         if (password) updateFields.password = password;
 
-        // If password is being updated, we need to use save() to trigger pre-save hook
         if (password) {
             const user = await User.findById(currentId);
             if (!user) {
@@ -113,7 +112,6 @@ const deleteUserProfile = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Cascade delete repositories and issues
         const userRepos = await Repository.find({ owner: currentId });
         const repoIds = userRepos.map(repo => repo._id);
         await Issue.deleteMany({ repository: { $in: repoIds } });
@@ -135,7 +133,6 @@ const login = async (req, res) => {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
-        // Since toJSON strips password, we need to explicitly select it for comparison
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({ message: "Invalid credentials" });
@@ -155,11 +152,44 @@ const login = async (req, res) => {
     }
 };
 
+// Fetch real user contribution activity map
+const getUserActivity = async (req, res) => {
+    const userId = req.params.userId;
+    try {
+        const [repos, issues] = await Promise.all([
+            Repository.find({ owner: userId }),
+            Issue.find({ author: userId })
+        ]);
+
+        const activityMap = {};
+
+        repos.forEach(repo => {
+            if (repo.createdAt) {
+                const dateStr = new Date(repo.createdAt).toISOString().split('T')[0];
+                activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+            }
+        });
+
+        issues.forEach(issue => {
+            if (issue.createdAt) {
+                const dateStr = new Date(issue.createdAt).toISOString().split('T')[0];
+                activityMap[dateStr] = (activityMap[dateStr] || 0) + 1;
+            }
+        });
+
+        res.json({ activityMap });
+    } catch (error) {
+        console.error("Error fetching user activity:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 export {
     getAllUsers,
     signUp,
     updateUserProfile,
     getUserProfile,
     deleteUserProfile,
-    login
+    login,
+    getUserActivity
 }
