@@ -1,16 +1,42 @@
-# React + Vite
+# 🌐 GitHub Clone — Frontend Web Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React SPA web interface for the GitHub Clone platform. Allows users to manage repositories, inspect code pushed from the `mygit` CLI, track issues, and view source code live in the browser.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+- **Dashboard**: Personal activity overview, repository list, user search, and creation shortcuts.
+- **Repository View (`RepoDetail.jsx`)**:
+  - **S3 File Explorer**: Browse files and directories stored in AWS S3 with breadcrumb navigation.
+  - **Path Normalization**: Automatically converts Windows backslashes (`\`) into web-standard forward slashes (`/`).
+  - **Code Modal**: Click any source file to inspect its content live inside an inline modal editor.
+  - **CLI Setup Instructions**: Dynamic setup banner displaying custom `mygit init <repoId>` commands per repository.
+- **Issue Tracker**: Create, filter, and view issue details (`open` / `closed`).
+- **User Profile**: Contribution heatmaps, user details, and repository collections.
+- **Authentication**: JWT token storage, login/signup forms, and protected navigation routes.
 
-The React Compiler is not enabled on this template. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Framework**: React 18 + Vite
+- **Routing**: React Router DOM (v6)
+- **HTTP Client**: Axios (configured with BaseURL and Auth interceptors)
+- **Styling**: Custom CSS3 styling with dark theme support
+- **Icons & Assets**: Custom SVG brand icons & emoji badges
+
+---
+
+## 🚀 Running Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Start Vite development server (Runs on http://localhost:5173)
+npm run dev
+
+# Build for production
+npm run build
+```

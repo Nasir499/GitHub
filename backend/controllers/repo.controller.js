@@ -298,15 +298,16 @@ const pushRepoFiles = async (req, res) => {
                 const { path: relativePath, content } = fileItem;
                 if (!relativePath) return;
 
-                const s3Key = `repos/${repoId}/commits/${commitId}/${relativePath.replace(/\\/g, '/')}`;
+                const cleanPath = relativePath.replace(/\\/g, '/');
+                const s3Key = `repos/${repoId}/commits/${commitId}/${cleanPath}`;
                 await s3.send(new PutObjectCommand({
                     Bucket: S3_BUCKET,
                     Key: s3Key,
                     Body: Buffer.from(content || '', 'utf-8')
                 }));
 
-                if (!repository.content.includes(relativePath)) {
-                    repository.content.push(relativePath);
+                if (!repository.content.includes(cleanPath)) {
+                    repository.content.push(cleanPath);
                 }
             }));
         }

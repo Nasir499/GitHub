@@ -98,13 +98,19 @@ function RepoDetail() {
 
   const isOwner = currentUser === repo.owner?._id || currentUser === repo.owner;
 
-  // Deduplicate S3 files and DB content
-  const s3Names = new Set(s3Files.map(f => f.name));
+  // Deduplicate S3 files and DB content, normalizing Windows backslashes (\ -> /)
+  const normalizedS3Files = s3Files
+    .filter(f => !f.name.endsWith('commit.json'))
+    .map(f => ({ ...f, name: f.name.replace(/\\/g, '/') }));
+
+  const s3Names = new Set(normalizedS3Files.map(f => f.name));
+
   const dbOnlyFiles = (repo.content || [])
-    .filter(f => !s3Names.has(f))
+    .map(f => f.replace(/\\/g, '/'))
+    .filter(f => !s3Names.has(f) && !f.endsWith('commit.json'))
     .map(f => ({ name: f, source: 'database' }));
 
-  const allFiles = [...s3Files, ...dbOnlyFiles];
+  const allFiles = [...normalizedS3Files, ...dbOnlyFiles];
 
   // Helper to filter items for the current folder path
   const getFolderContents = (files, currentPath) => {
