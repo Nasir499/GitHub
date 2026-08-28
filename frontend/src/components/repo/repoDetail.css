@@ -1,0 +1,275 @@
+.repo-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.repo-detail-container {
+  max-width: 1080px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 24px 40px 24px;
+}
+
+.repo-detail-header {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #30363d;
+}
+
+.repo-detail-back {
+  color: #58a6ff;
+  font-size: 14px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.repo-detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.repo-detail-title h1 {
+  font-size: 24px;
+  font-weight: 400;
+  margin: 0;
+}
+
+.repo-owner {
+  color: #58a6ff;
+}
+
+.repo-separator {
+  color: #8b949e;
+  margin: 0 2px;
+}
+
+.repo-name {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.repo-description {
+  color: #8b949e;
+  margin: 8px 0 4px 0;
+  font-size: 15px;
+}
+
+.repo-meta {
+  color: #8b949e;
+  font-size: 13px;
+  margin: 0;
+}
+
+.repo-detail-section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.section-header h3 {
+  color: #f0f6fc;
+  font-size: 18px;
+  margin: 0;
+}
+
+.s3-cloud-badge {
+  background-color: rgba(56, 139, 253, 0.12);
+  color: #58a6ff;
+  border: 1px solid rgba(56, 139, 253, 0.3);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+/* File Table */
+.file-list-table {
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #161b22;
+}
+
+.file-table-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 10px 16px;
+  background-color: #21262d;
+  border-bottom: 1px solid #30363d;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b949e;
+  text-transform: uppercase;
+}
+
+.file-table-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 12px 16px;
+  border-bottom: 1px solid #30363d;
+  align-items: center;
+  font-size: 14px;
+  color: #c9d1d9;
+  transition: background-color 0.15s ease;
+}
+
+.file-table-row:last-child {
+  border-bottom: none;
+}
+
+.file-table-row.clickable {
+  cursor: pointer;
+}
+
+.file-table-row.clickable:hover {
+  background-color: #1c2128;
+}
+
+.file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-name {
+  color: #58a6ff;
+  font-weight: 500;
+}
+
+.file-commit-cell {
+  font-family: monospace;
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.file-size-cell,
+.file-date-cell {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.empty-files-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  background-color: #161b22;
+  border: 1px dashed #30363d;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.empty-files-box .box-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.empty-files-box p {
+  color: #8b949e;
+  margin: 0;
+  font-size: 14px;
+}
+
+.empty-files-box code {
+  background-color: #21262d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #f0f6fc;
+}
+
+/* Modal / Code Viewer */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  background-color: #161b22;
+  border-bottom: 1px solid #30363d;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #f0f6fc;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: #8b949e;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-close-btn:hover {
+  color: #f0f6fc;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.code-loading {
+  color: #8b949e;
+  text-align: center;
+  padding: 20px;
+}
+
+.code-viewer {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #c9d1d9;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background-color: #161b22;
+  padding: 16px;
+  border-radius: 6px;
+  border: 1px solid #30363d;
+}
+
+.repo-loading,
+.repo-error {
+  text-align: center;
+  padding: 40px;
+  color: #8b949e;
+}

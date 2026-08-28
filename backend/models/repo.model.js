@@ -5,19 +5,20 @@ import { Schema } from "mongoose";
 const RepositorySchema = new Schema({
     name: {
         type: String,
-        unique: true,
         required: true
     },
     description: {
-        type: String
+        type: String,
+        default: ""
     },
     content: [
         {
-        type: String,
+            type: String,
         }
     ],
     visibility:{
-        type:Boolean
+        type:Boolean,
+        default:true
     },
     owner:{
         type:Schema.Types.ObjectId,
@@ -30,8 +31,13 @@ const RepositorySchema = new Schema({
             ref:"Issue"
         }
     ]
-},{timestamps:true},{Collection:"repos"})
+},{
+    timestamps:true,
+    collection:"repos"
+})
 
+// Compound unique index: same user can't have two repos with same name
+RepositorySchema.index({ name: 1, owner: 1 }, { unique: true });
 
 const Repository = mongoose.model("Repository",RepositorySchema)
 

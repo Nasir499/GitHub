@@ -8,7 +8,7 @@ const IssueSchema = new Schema({
     },
     description:{
         type:String,
-        required:true
+        required:true,
     },
     status:{
         type:String,
@@ -18,9 +18,16 @@ const IssueSchema = new Schema({
     repository:{
         type:Schema.Types.ObjectId,
         ref:"Repository",
-        reuired:true
+        required:true
+    },
+    author:{
+        type:Schema.Types.ObjectId,
+        ref:"User"
     }
-},{timestamps:true},{Collection:"issues"})
+},{
+    timestamps:true,
+    collection:"issues"
+})
 
 
 const Issue = mongoose.model("Issue",IssueSchema)

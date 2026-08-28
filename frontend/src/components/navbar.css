@@ -1,31 +1,110 @@
+.navbar-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: rgba(13, 17, 23, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #30363d;
+  padding: 12px 0;
+  margin-bottom: 24px;
+}
 
-nav {
+.navbar-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
   display: flex;
   justify-content: space-between;
-  padding-bottom: 10px;
-  border-bottom: 2px solid white;
+  align-items: center;
 }
 
-nav img {
-  height: 50px;
-  border-radius: 100%;
-}
-nav div {
+.navbar-left {
   display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-nav h3 {
-  margin-left: 15px;
-  color: white;
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
 }
 
-nav p {
-  margin-left: 50px;
+.navbar-logo {
+  height: 32px;
+  width: 32px;
+  transition: transform 0.2s ease;
+}
+
+.navbar-brand:hover .navbar-logo {
+  transform: scale(1.08);
+}
+
+.navbar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f0f6fc;
+  letter-spacing: -0.3px;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar-link {
+  color: #f0f6fc;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.navbar-link:hover {
+  background-color: #21262d;
+  text-decoration: none;
+}
+
+.navbar-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #238636;
+  color: #ffffff !important;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.navbar-create-btn:hover {
+  background-color: #2ea043;
+  text-decoration: none;
+}
+
+.plus-icon {
   font-weight: bold;
-  color: white;
+  font-size: 16px;
 }
 
-nav h3:hover,
-nav p:hover {
-  text-decoration: underline;
+.navbar-logout-btn {
+  background-color: transparent;
+  color: #f85149;
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.navbar-logout-btn:hover {
+  background-color: rgba(248, 81, 73, 0.15);
+  border-color: #f85149;
 }

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Schema } from "mongoose";
+import bcrypt from "bcryptjs";
 
 const UserSchema = new Schema({
     username:{
@@ -9,6 +10,7 @@ const UserSchema = new Schema({
     },
     email:{
         type:String,
+        required:true,
         unique:true
     },
     password:{
@@ -18,28 +20,47 @@ const UserSchema = new Schema({
     repositories:[
         {
             type:Schema.Types.ObjectId,
-            ref:"Repository",
-            default:[]
+            ref:"Repository"
         }
     ],
     followedUsers:[
         {
             type:Schema.Types.ObjectId,
-            ref:"Users",
-            default:[]
+            ref:"User"
         }
     ],
     starRepos:[
         {
             type:Schema.Types.ObjectId,
-            ref:"Repository",
-            default:[]
+            ref:"Repository"
         }
     ],
 },{
-    timestamps:true
-},{Collection:"users"})
+    timestamps:true,
+    collection:"users"
+})
 
-const User = mongoose.model("User",UserSchema)
+// Hash password before saving
+UserSchema.pre("save", async function(next) {
+    if (!this.isModified("password")) return next();
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+// Compare password method
+UserSchema.methods.comparePassword = async function(candidatePassword) {
+    return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Strip password from JSON responses
+UserSchema.set("toJSON", {
+    transform: function(doc, ret) {
+        delete ret.password;
+        return ret;
+    }
+});
+
+const User = mongoose.model("User", UserSchema)
 
 export default User;

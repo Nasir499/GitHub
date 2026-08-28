@@ -1,118 +1,100 @@
-
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState } from "react";
+import API from "../../api.js";
 import { useAuth } from "../../Authcontext.jsx";
-
-import { PageHeader } from "@primer/react/experimental";
-import { Box, Button } from "@primer/react";
-import "./auth.css";
-
+import { useNavigate, Link } from "react-router-dom";
 import logo from "../../assets/github-mark-white.svg";
-import { Link } from "react-router-dom";
+import "./auth.css";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { setCurrentUser } = useAuth();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
+    setError("");
 
     try {
       setLoading(true);
-      const res = await axios.post("http://localhost:3000/signup", {
-        email: email,
-        password: password,
-        username: username,
+      const res = await API.post("/signup", {
+        email,
+        password,
+        username,
       });
 
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("userId", res.data.userId);
-
-      setCurrentUser(res.data.userId);
-      setLoading(false);
-
-      window.location.href = "/";
+      login(res.data.token, res.data.userId);
+      navigate("/");
     } catch (err) {
       console.error(err);
-      alert("Signup Failed!");
+      setError(err.response?.data?.message || "Signup failed. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-wrapper">
-      <div className="login-logo-container">
-        <img className="logo-login" src={logo} alt="Logo" />
-      </div>
-
-      <div className="login-box-wrapper">
-        <div className="login-heading">
-          <Box sx={{ padding: 1 }}>
-            <PageHeader>
-              <PageHeader.TitleArea variant="large">
-                <PageHeader.Title>Sign Up</PageHeader.Title>
-              </PageHeader.TitleArea>
-            </PageHeader>
-          </Box>
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-header">
+          <img className="auth-logo" src={logo} alt="GitHub Logo" />
+          <h1 className="auth-title">Create your account</h1>
         </div>
 
-        <div className="login-box">
-          <div>
-            <label className="label">Username</label>
-            <input
-              autoComplete="off"
-              name="Username"
-              id="Username"
-              className="input"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
+        <div className="auth-card">
+          {error && <div className="auth-error-banner">{error}</div>}
 
-          <div>
-            <label className="label">Email address</label>
-            <input
-              autoComplete="off"
-              name="Email"
-              id="Email"
-              className="input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+          <form onSubmit={handleSignup} className="auth-form">
+            <div className="form-field">
+              <label htmlFor="username">Username</label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                placeholder="username"
+              />
+            </div>
 
-          <div className="div">
-            <label className="label">Password</label>
-            <input
-              autoComplete="off"
-              name="Password"
-              id="Password"
-              className="input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+            <div className="form-field">
+              <label htmlFor="email">Email address</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="user@example.com"
+              />
+            </div>
 
-          <Button
-            variant="primary"
-            className="login-btn"
-            disabled={loading}
-            onClick={handleSignup}
-          >
-            {loading ? "Loading..." : "Signup"}
-          </Button>
+            <div className="form-field">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? "Creating account..." : "Create account"}
+            </button>
+          </form>
         </div>
 
-        <div className="pass-box">
+        <div className="auth-footer-box">
           <p>
-            Already have an account? <Link to="/auth">Login</Link>
+            Already have an account? <Link to="/auth">Sign in</Link>
           </p>
         </div>
       </div>

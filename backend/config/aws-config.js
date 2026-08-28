@@ -1,12 +1,12 @@
-import AWS from "aws-sdk";
+import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import dotenv from 'dotenv';
 
-AWS.config.update({region:"ap-south-1"});
+dotenv.config();
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({
+    region: process.env.AWS_REGION || 'ap-south-1'
+});
 
-const S3_BUCKET = "nasir499";
+const S3_BUCKET = process.env.S3_BUCKET || 'nasir499';
 
-export {
-    s3,
-    S3_BUCKET
-}
+export { s3, S3_BUCKET, PutObjectCommand, GetObjectCommand, ListObjectsV2Command };

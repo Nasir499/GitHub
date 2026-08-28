@@ -1,4 +1,6 @@
 import express from 'express'
+import authMiddleware from '../middlewares/auth.middleware.js'
+import authorizeOwner from '../middlewares/authorize.middleware.js'
 import { 
     createRepository,
     updateRepository,
@@ -7,19 +9,25 @@ import {
     fetchRepositoryById,
     fetchRepositoryByName,
     fetchRepositoryForCurrentUser,
-    toggleVisibilityById } from '../controllers/repo.controller.js'
+    toggleVisibilityById,
+    fetchRepositoryS3Files,
+    fetchS3FileContent
+} from '../controllers/repo.controller.js'
 
 const repoRouter = express.Router();
 
+// Public routes
+repoRouter.get('/repo/all', getAllRepositories)
+repoRouter.get('/repo/s3-files', fetchRepositoryS3Files)
+repoRouter.get('/repo/s3-content', fetchS3FileContent)
+repoRouter.get('/repo/:id', fetchRepositoryById)
+repoRouter.get('/repo/name/:name', fetchRepositoryByName)
+repoRouter.get('/repo/user/:userId', fetchRepositoryForCurrentUser)
 
-repoRouter.post('/repo/create',createRepository)
-repoRouter.get('/repo/all',getAllRepositories)
-repoRouter.get('/repo/:id',fetchRepositoryById)
-repoRouter.get('/repo/name/:name',fetchRepositoryByName)
-repoRouter.get('/repo/user/:userId',fetchRepositoryForCurrentUser)
-repoRouter.put('/repo/update/:id',updateRepository)
-repoRouter.delete('/repo/delete/:id',deleteRepository)
-repoRouter.patch('/repo/toggle/:id',toggleVisibilityById)
+// Protected routes
+repoRouter.post('/repo/create', authMiddleware, createRepository)
+repoRouter.put('/repo/update/:id', authMiddleware, authorizeOwner(), updateRepository)
+repoRouter.delete('/repo/delete/:id', authMiddleware, authorizeOwner(), deleteRepository)
+repoRouter.patch('/repo/toggle/:id', authMiddleware, authorizeOwner(), toggleVisibilityById)
 
-
-export {repoRouter}
+export { repoRouter }

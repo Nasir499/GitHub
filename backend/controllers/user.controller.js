@@ -1,183 +1,159 @@
 import jwt from 'jsonwebtoken'
-import { MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
-import bcrypt from 'bcryptjs'
-import { ObjectId } from 'mongodb'
+import User from '../models/user.model.js'
+import Repository from '../models/repo.model.js'
+import Issue from '../models/issue.model.js'
 
 dotenv.config()
-const mongodbUri = process.env.MONGODB_URI;
 
-let client;
+const getAllUsers = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
 
-async function connectClient() {
-    if (!client) {
-        client = new MongoClient(mongodbUri,
-            {
-                useNewUrlParser: true,
-                useUnifiedTopology: true
-            }
-        )
-        await client.connect()
+        const users = await User.find({}).skip(skip).limit(limit);
+        res.json(users);
+    } catch (error) {
+        console.error("Error during fetching:", error);
+        res.status(500).json({ message: "Server error" });
     }
-}
-const getAllUsers = async(req, res) => {
-   try {
-        await connectClient()
-        const db = client.db("Github")
-        const userCollection = db.collection("users")
-
-        const users = await userCollection.find({}).toArray();
-        res.json(users)
-   } catch (error) {
-       console.error("Error during fetching : ",error);
-        res.status(500).json("Server Errors!!!")
-   }
 };
+
 const signUp = async (req, res) => {
     const { username, password, email } = req.body;
+
     try {
-        await connectClient();
-        const db = client.db("Github")
-        const userCollection = db.collection("users")
-
-
-        const user = await userCollection.findOne({ username })
-        if (user) {
-            return res.status(400).json({ message: "User already exists" })
+        if (!username || !password || !email) {
+            return res.status(400).json({ message: "Username, email, and password are required" });
         }
 
-
-        const salt = await bcrypt.genSalt(12);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newUser = {
-            username,
-            password: hashedPassword,
-            email,
-            repositories: [],
-            followedUsers: [],
-            starRepos: []
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({ message: "User already exists" });
         }
 
-        const result = await userCollection.insertOne(newUser);
+        const newUser = new User({ username, password, email });
+        await newUser.save();
 
-        const token = jwt.sign({ id: result.insertId }, process.env.JWT_SECRET_KEY, { expiresIn: "1h" })
+        const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1h" });
 
-        res.json({ token })
-
-
-
+        res.status(201).json({ token, userId: newUser._id });
     } catch (error) {
-        console.error("Error during signUp : ", error.message);
-        res.status(500).send("Server error")
-
+        console.error("Error during signUp:", error.message);
+        res.status(500).json({ message: "Server error" });
     }
 };
-const getUserProfile = async(req, res) => {
+
+const getUserProfile = async (req, res) => {
     const currentId = req.params.id;
 
     try {
-        await connectClient()
-        const db = client.db("Github")
-        const userCollection = db.collection("users")
-
-        const user = await userCollection.findOne({_id:new ObjectId(currentId)});
-         if (!user) {
-            return res.status(400).json({ message: "Invalid Credentials" })
-        }
-        res.json(user)
-    } catch (error) {
-         console.error("Error during fetching : ",error);
-        res.status(500).json("Server Errors!!!")
-    }
-};
-const updateUserProfile =async(req, res) => {
-   const currentId = req.params.id;
-   const {email,password} =req.body;
-
-
-   try {
-    let upadateFields = {email}
-    if(password){
-        const salt = await bcrypt.genSalt(12)
-        const hashedPassword = await bcrypt.hash(password,salt)
-        upadateFields.password = hashedPassword
-    }
-     await connectClient()
-        const db = client.db("Github")
-        const userCollection = db.collection("users")
-        const result = await userCollection.findOneAndUpdate(
-        {
-            _id:new ObjectId(currentId)
-        },
-        {$set:upadateFields},
-        {ReturnDocument:"after"})
-
-        if(!result.value){
-             return res.status(400).json({ message: "User not found" })
-
-        }
-        res.send(result.value)
-
-   } catch (error) {
-     console.error("Error during updating : ",error);
-        res.status(500).json("Server Errors!!!")
-   }
-};
-const deleteUserProfile = async(req, res) => {
-    const currentId = req.params.id;
-
-    try {
-        await connectClient()
-        const db = client.db("Github")
-        const userCollection = db.collection("users")
-
-        const result = await userCollection.deleteOne({
-            _id:new ObjectId(currentId)
-        })
-        if(result.deleteCount==0){
-             return res.status(400).json({ message: "User not found" })
-       }
-       res.json({message:"User Deleted"})
-        
-    } catch (error) {
-         console.error("Error during deleting : ",error);
-        res.status(500).json("Server Errors!!!")
-    }
-};
-const login = async(req, res) => {
-    const {email,password} = req.body;
-
-
-    try {
-        await connectClient()
-        const db = client.db("Github")
-        const userCollection = db.collection("users")
-
-        const user = await userCollection.findOne({ email })
+        const user = await User.findById(currentId);
         if (!user) {
-            return res.status(400).json({ message: "Invalid Credentials" })
+            return res.status(404).json({ message: "User not found" });
         }
-
-        const isMatch = bcrypt.compare(password,user.password)
-
-        if(!isMatch){
-            return res.status(400).json({ message: "Invalid Credentials" })
-        }
-
-       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1h" })
-
-       res.json({token,userId:user._id})
-
-
+        res.json(user);
     } catch (error) {
-        console.error("Error during login : ",error);
-        res.status(500).json("Server Errors!!!")
-        
+        console.error("Error during fetching:", error);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
+const updateUserProfile = async (req, res) => {
+    const currentId = req.params.id;
+    const { email, password } = req.body;
 
+    try {
+        if (email) {
+            const existingUser = await User.findOne({ email, _id: { $ne: currentId } });
+            if (existingUser) {
+                return res.status(400).json({ message: "Email is already in use by another account" });
+            }
+        }
+
+        const updateFields = {};
+        if (email) updateFields.email = email;
+        if (password) updateFields.password = password;
+
+        // If password is being updated, we need to use save() to trigger pre-save hook
+        if (password) {
+            const user = await User.findById(currentId);
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            if (email) user.email = email;
+            user.password = password;
+            await user.save();
+            return res.json(user);
+        }
+
+        const user = await User.findByIdAndUpdate(
+            currentId,
+            { $set: updateFields },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error("Error during updating:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const deleteUserProfile = async (req, res) => {
+    const currentId = req.params.id;
+
+    try {
+        const result = await User.findByIdAndDelete(currentId);
+        if (!result) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Cascade delete repositories and issues
+        const userRepos = await Repository.find({ owner: currentId });
+        const repoIds = userRepos.map(repo => repo._id);
+        await Issue.deleteMany({ repository: { $in: repoIds } });
+        await Repository.deleteMany({ owner: currentId });
+        await Issue.deleteMany({ author: currentId });
+
+        res.json({ message: "User deleted" });
+    } catch (error) {
+        console.error("Error during deleting:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+const login = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        if (!email || !password) {
+            return res.status(400).json({ message: "Email and password are required" });
+        }
+
+        // Since toJSON strips password, we need to explicitly select it for comparison
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1h" });
+
+        res.json({ token, userId: user._id });
+    } catch (error) {
+        console.error("Error during login:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
 
 export {
     getAllUsers,
@@ -187,4 +163,3 @@ export {
     deleteUserProfile,
     login
 }
-

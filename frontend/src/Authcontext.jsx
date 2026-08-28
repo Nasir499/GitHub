@@ -1,23 +1,58 @@
-import React,{createContext,useState,useEffect,useContext} from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
 const AuthContext = createContext();
 
-export const useAuth = ()=>{
-    return useContext(AuthContext)
-}
+export const useAuth = () => {
+    return useContext(AuthContext);
+};
 
-export const AuthProvider = ({children})=>{
-    const [currentUser,setCurrentUser] = useState(null);
-
-    useEffect(()=>{
-        const userId = localStorage.getItem('userId');
-        if(userId){
-            setCurrentUser(userId)
-        }
-    },[])
-    const value = {
-        currentUser,setCurrentUser
+// Simple JWT expiry check (decode payload without verification)
+const isTokenExpired = (token) => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000 < Date.now();
+    } catch {
+        return true;
     }
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
+};
 
+export const AuthProvider = ({ children }) => {
+    const [currentUser, setCurrentUser] = useState(null);
+
+    useEffect(() => {
+        const userId = localStorage.getItem('userId');
+        const token = localStorage.getItem('token');
+
+        if (userId && token) {
+            if (isTokenExpired(token)) {
+                // Token expired, clear everything
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                setCurrentUser(null);
+            } else {
+                setCurrentUser(userId);
+            }
+        }
+    }, []);
+
+    const login = (token, userId) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('userId', userId);
+        setCurrentUser(userId);
+    };
+
+    const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        setCurrentUser(null);
+    };
+
+    const value = {
+        currentUser,
+        setCurrentUser,
+        login,
+        logout
+    };
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

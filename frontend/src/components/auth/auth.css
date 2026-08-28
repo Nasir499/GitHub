@@ -1,99 +1,139 @@
-/* --- Global Styles & Variables --- */
-:root {
-  --background-color: #0c1116;
-  --form-bg-color: #161a23;
-  --primary-text-color: #f1f6fd;
-  --input-border-color: #4a5568;
-  --accent-color: #3b82f6; /* Blue for links and focus highlights */
-  --font-family-main: 'Asap', sans-serif;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-family-main);
-  background-color: var(--background-color);
-  color: var(--primary-text-color);
-}
-
-/* --- Main Layout --- */
-.login-wrapper {
+.auth-page {
+  min-height: 100vh;
   display: flex;
+  align-items: center;
   justify-content: center;
-  flex-direction: column;
-  /* align-items: center; */
-  min-height: 90vh; /* Better than height: 100vh */
+  background-color: #0d1117;
+  padding: 24px;
+}
+
+.auth-container {
   width: 100%;
-  gap: 5px; /* Creates space between logo and form */
-  /* padding: 20px; */
-  box-sizing: border-box;
-}
-
-/* --- Logo Styling --- */
-.login-logo-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 0px !important;
-  /* align-items: center; */
-}
-
-.logo-login {
-  width: 64px; /* A bit larger for better visual balance */
-  height: auto;
-  opacity: 0.8;
-}
-
-/* --- Form Container --- */
-/* You can combine .login-box-wrapper and .login-box into one container in your JSX for simplicity */
-.login-box {
-  width: 100%;
-  max-width: 380px;
-  min-height: 300px;
-  padding: 40px;
-  border-radius: 10px;
-  background-color: var(--form-bg-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-
-  /* This will stack the heading, inputs, and button vertically */
+  max-width: 340px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  align-items: center;
 }
 
-/* --- Form Element Styling --- */
-.login-heading {
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.auth-logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.auth-title {
   font-size: 24px;
-  font-weight: 600;
-  color: var(--primary-text-color);
-  margin: 0 0 10px 0;
+  font-weight: 300;
+  color: #f0f6fc;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.auth-card {
+  width: 100%;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.auth-error-banner {
+  background-color: rgba(248, 81, 73, 0.15);
+  border: 1px solid rgba(248, 81, 73, 0.4);
+  color: #f85149;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #f0f6fc;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #010409;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #f0f6fc;
+  font-size: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.3);
+}
+
+.auth-submit-btn {
+  width: 100%;
+  padding: 8px 16px;
+  background-color: #238636;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.auth-submit-btn:hover {
+  background-color: #2ea043;
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-footer-box {
+  margin-top: 16px;
+  width: 100%;
+  padding: 16px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
   text-align: center;
 }
 
-/* A container for each label-input pair */
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.label {
+.auth-footer-box p {
   font-size: 14px;
-  font-weight: 500;
+  color: #f0f6fc;
+  margin: 0;
 }
 
-.input {
-  width: 100%;
-  padding: 12px;
-  background-color: var(--background-color);
-  border: 1px solid var(--input-border-color);
-  border-radius: 6px;
-  color: var(--primary-text-color);
-  font-size: 16px;
-  box-sizing: border-box;
-  transition: border-color 0.2s, box-shadow 0.2s;
+.auth-footer-box a {
+  color: #58a6ff;
+  text-decoration: none;
 }
 
-.input:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+.auth-footer-box a:hover {
+  text-decoration: underline;
 }

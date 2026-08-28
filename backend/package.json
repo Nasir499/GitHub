@@ -1,9 +1,12 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "GitHub Clone Backend & Version Control Engine",
   "main": "index.js",
   "type": "module",
+  "bin": {
+    "mygit": "./index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js"
@@ -23,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.20.0",
     "mongoose": "^8.18.2",
+    "morgan": "^1.10.1",
     "nodemon": "^3.1.10",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0",
