@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv'
+import mongoose from 'mongoose'
 import User from '../models/user.model.js'
 import Repository from '../models/repo.model.js'
 import Issue from '../models/issue.model.js'
@@ -49,13 +50,29 @@ const getUserProfile = async (req, res) => {
     const currentId = req.params.id;
 
     try {
+        let currentObjId;
+        try {
+            currentObjId = new mongoose.Types.ObjectId(currentId);
+        } catch {
+            currentObjId = currentId;
+        }
+
         const user = await User.findById(currentId).populate("followedUsers", "_id username email");
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const followers = await User.find({ followedUsers: currentId }).select("_id username email");
+
+        const followers = await User.find({
+            $or: [
+                { followedUsers: currentId },
+                { followedUsers: currentObjId }
+            ]
+        }).select("_id username email");
+
         const userObj = user.toObject();
-        userObj.followers = followers;
+        userObj.followedUsers = (userObj.followedUsers || []).filter(Boolean);
+        userObj.followers = (followers || []).filter(Boolean);
+
         res.json(userObj);
     } catch (error) {
         console.error("Error during fetching:", error);

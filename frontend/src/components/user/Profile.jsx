@@ -11,8 +11,9 @@ function Profile() {
   const { id: paramUserId } = useParams();
   const navigate = useNavigate();
 
-  const targetUserId = paramUserId || currentUser;
-  const isOwnProfile = !paramUserId || paramUserId === currentUser;
+  const effectiveUserId = currentUser || localStorage.getItem('userId');
+  const targetUserId = paramUserId || effectiveUserId;
+  const isOwnProfile = !paramUserId || paramUserId === effectiveUserId;
 
   const [user, setUser] = useState(null);
   const [repos, setRepos] = useState([]);
@@ -22,6 +23,7 @@ function Profile() {
   const [error, setError] = useState('');
 
   const fetchProfile = useCallback(async () => {
+    if (!targetUserId) return;
     setLoading(true);
     setError('');
     try {
@@ -32,11 +34,12 @@ function Profile() {
       setUser(profileRes.data);
       setRepos(Array.isArray(reposRes.data.repositories) ? reposRes.data.repositories : []);
 
-      if (!isOwnProfile && currentUser) {
+      if (!isOwnProfile && effectiveUserId) {
         try {
-          const loggedInRes = await API.get(`/getProfile/${currentUser}`);
+          const loggedInRes = await API.get(`/getProfile/${effectiveUserId}`);
           const followingList = loggedInRes.data?.followedUsers || [];
-          setIsFollowing(followingList.some(id => (id._id || id) === targetUserId));
+          const checkId = (u) => (u && typeof u === 'object' ? u._id : u)?.toString();
+          setIsFollowing(followingList.some(u => checkId(u) === targetUserId.toString()));
         } catch (err) {
           console.error('Error checking followed status:', err);
         }
@@ -54,7 +57,7 @@ function Profile() {
     } finally {
       setLoading(false);
     }
-  }, [targetUserId, currentUser, isOwnProfile, logout, navigate]);
+  }, [targetUserId, effectiveUserId, isOwnProfile, logout, navigate]);
 
   useEffect(() => {
     if (targetUserId) {
@@ -235,22 +238,27 @@ function Profile() {
                 </div>
               ) : (
                 <div className="user-cards-grid">
-                  {followersList.map((follower) => (
-                    <div key={follower._id} className="user-list-card">
-                      <div className="user-card-avatar">
-                        {follower.username?.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="user-card-details">
-                        <Link to={`/user/${follower._id}`} className="user-card-username">
-                          {follower.username}
+                  {followersList.map((follower) => {
+                    const fId = follower._id || follower;
+                    const name = follower.username || "User";
+                    const email = follower.email || "";
+                    return (
+                      <div key={fId} className="user-list-card">
+                        <div className="user-card-avatar">
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="user-card-details">
+                          <Link to={`/user/${fId}`} className="user-card-username">
+                            {name}
+                          </Link>
+                          {email && <span className="user-card-email">{email}</span>}
+                        </div>
+                        <Link to={`/user/${fId}`} className="btn-user-action">
+                          View Profile
                         </Link>
-                        <span className="user-card-email">{follower.email}</span>
                       </div>
-                      <Link to={`/user/${follower._id}`} className="btn-user-action">
-                        View Profile
-                      </Link>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -270,22 +278,27 @@ function Profile() {
                 </div>
               ) : (
                 <div className="user-cards-grid">
-                  {followingList.map((followed) => (
-                    <div key={followed._id} className="user-list-card">
-                      <div className="user-card-avatar">
-                        {followed.username?.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="user-card-details">
-                        <Link to={`/user/${followed._id}`} className="user-card-username">
-                          {followed.username}
+                  {followingList.map((followed) => {
+                    const fId = followed._id || followed;
+                    const name = followed.username || "User";
+                    const email = followed.email || "";
+                    return (
+                      <div key={fId} className="user-list-card">
+                        <div className="user-card-avatar">
+                          {name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="user-card-details">
+                          <Link to={`/user/${fId}`} className="user-card-username">
+                            {name}
+                          </Link>
+                          {email && <span className="user-card-email">{email}</span>}
+                        </div>
+                        <Link to={`/user/${fId}`} className="btn-user-action">
+                          View Profile
                         </Link>
-                        <span className="user-card-email">{followed.email}</span>
                       </div>
-                      <Link to={`/user/${followed._id}`} className="btn-user-action">
-                        View Profile
-                      </Link>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
