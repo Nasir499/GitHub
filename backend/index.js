@@ -93,7 +93,7 @@ yargs(hideBin(process.argv))
 
        const db = mongoose.connection;
 
-       httpServer.listen(port,()=>{
+       httpServer.listen(port,"0.0.0.0",()=>{
         console.log(`SERVER is running on : http://localhost:${port}`);  
        })
 
