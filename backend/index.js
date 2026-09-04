@@ -58,6 +58,7 @@ yargs(hideBin(process.argv))
 
     function startServer(){
         const app = express()
+        app.set('trust proxy', true)
         const port = process.env.PORT || 3000;
 
         app.use(express.json({ limit: '50mb' }))

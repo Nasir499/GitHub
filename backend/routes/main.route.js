@@ -18,7 +18,10 @@ mainrouter.use(issueRouter)
 // Automated PowerShell installer script endpoint for outside users
 mainrouter.get('/install.ps1', (req, res) => {
     const host = req.get('host');
-    const protocol = req.protocol;
+    let protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+        protocol = 'https';
+    }
     const backendUrl = `${protocol}://${host}`;
 
     const psScript = `# Automated mygit CLI installer for Windows
@@ -34,7 +37,7 @@ $cliJs = "$winApps\\mygit-cli.js"
 $batPath = "$winApps\\mygit.bat"
 
 # Download standalone CLI script from server
-Invoke-WebRequest -Uri "${backendUrl}/cli-bundle.js" -OutFile $cliJs -UseBasicParsing
+Invoke-WebRequest -Uri "${backendUrl}/cli-bundle.js" -OutFile $cliJs -UseBasicParsing -MaximumRedirection 10
 
 # Create batch wrapper executable in WindowsApps
 $cmdContent = '@echo off' + [Environment]::NewLine + 'node "' + $cliJs + '" %*'
@@ -51,7 +54,10 @@ Write-Host "💡 You can now run 'mygit' in any terminal window on your machine!
 // Standalone CLI script bundle downloaded by outside users
 mainrouter.get('/cli-bundle.js', (req, res) => {
     const host = req.get('host');
-    const protocol = req.protocol;
+    let protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+        protocol = 'https';
+    }
     const backendUrl = `${protocol}://${host}`;
 
     const cliBundle = `#!/usr/bin/env node
