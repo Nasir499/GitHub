@@ -7,7 +7,8 @@ import {
     getUserProfile,
     deleteUserProfile,
     login,
-    getUserActivity
+    getUserActivity,
+    toggleFollowUser
 } from '../controllers/user.controller.js';
 
 const userrouter = express.Router();
@@ -28,6 +29,7 @@ userrouter.get('/user/activity/:userId', getUserActivity)
 
 // Protected routes
 userrouter.get('/getProfile/:id', authMiddleware, getUserProfile)
+userrouter.post('/user/follow/:id', authMiddleware, toggleFollowUser)
 userrouter.put('/updateProfile/:id', authMiddleware, selfOnly, updateUserProfile)
 userrouter.delete('/deleteProfile/:id', authMiddleware, selfOnly, deleteUserProfile)
 

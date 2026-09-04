@@ -177,7 +177,25 @@ const fetchRepositoryByName = async (req, res) => {
 const fetchRepositoryForCurrentUser = async (req, res) => {
     const userId = req.params.userId;
     try {
-        const repositories = await Repository.find({ owner: userId });
+        const query = { owner: userId };
+
+        const authHeader = req.headers.authorization;
+        let isOwner = false;
+        if (authHeader) {
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+                if (decoded.id === userId) {
+                    isOwner = true;
+                }
+            } catch (err) {}
+        }
+
+        if (!isOwner) {
+            query.visibility = true;
+        }
+
+        const repositories = await Repository.find(query);
 
         res.json({
             message: "Repositories found",

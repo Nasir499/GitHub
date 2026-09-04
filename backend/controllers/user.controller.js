@@ -196,6 +196,47 @@ const getUserActivity = async (req, res) => {
     }
 };
 
+const toggleFollowUser = async (req, res) => {
+    const targetUserId = req.params.id;
+    const currentUserId = req.user;
+
+    if (targetUserId === currentUserId.toString()) {
+        return res.status(400).json({ message: "You cannot follow yourself" });
+    }
+
+    try {
+        const currentUserDoc = await User.findById(currentUserId);
+        const targetUserDoc = await User.findById(targetUserId);
+
+        if (!currentUserDoc || !targetUserDoc) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const isFollowing = currentUserDoc.followedUsers.some(
+            (id) => id.toString() === targetUserId.toString()
+        );
+
+        if (isFollowing) {
+            currentUserDoc.followedUsers = currentUserDoc.followedUsers.filter(
+                (id) => id.toString() !== targetUserId.toString()
+            );
+        } else {
+            currentUserDoc.followedUsers.push(targetUserId);
+        }
+
+        await currentUserDoc.save();
+
+        res.json({
+            message: isFollowing ? "Unfollowed user" : "Followed user",
+            isFollowing: !isFollowing,
+            followingCount: currentUserDoc.followedUsers.length
+        });
+    } catch (error) {
+        console.error("Error toggling follow user:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 export {
     getAllUsers,
     signUp,
@@ -203,5 +244,6 @@ export {
     getUserProfile,
     deleteUserProfile,
     login,
-    getUserActivity
+    getUserActivity,
+    toggleFollowUser
 }

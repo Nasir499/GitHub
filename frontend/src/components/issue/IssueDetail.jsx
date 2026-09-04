@@ -85,8 +85,15 @@ function IssueDetail() {
               {issue.status === 'open' ? '🟢 Open' : '🔴 Closed'}
             </span>
             <span className="issue-meta-text">
-              Opened by <strong>{issue.author?.username || 'unknown'}</strong> on{' '}
-              {new Date(issue.createdAt).toLocaleDateString()}
+              Opened by{' '}
+              {issue.author?._id ? (
+                <Link to={`/user/${issue.author._id}`} style={{ color: '#58a6ff', textDecoration: 'none', fontWeight: 600 }}>
+                  {issue.author.username}
+                </Link>
+              ) : (
+                <strong>unknown</strong>
+              )}{' '}
+              on {new Date(issue.createdAt).toLocaleDateString()}
             </span>
           </div>
         </div>

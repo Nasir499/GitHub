@@ -184,7 +184,7 @@ function RepoDetail() {
             <Link to="/" className="repo-detail-back">&larr; Back</Link>
             <div className="title-row">
               <h1>
-                <span className="repo-owner">{repo.owner?.username || 'Unknown'}</span>
+                <Link to={`/user/${repo.owner?._id || repo.owner}`} className="repo-owner">{repo.owner?.username || 'Unknown'}</Link>
                 <span className="repo-separator">/</span>
                 <span className="repo-name">{repo.name}</span>
               </h1>

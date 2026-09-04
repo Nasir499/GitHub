@@ -3,43 +3,77 @@ import API from '../../api.js';
 import { useAuth } from '../../useAuth.js';
 import Navbar from '../Navbar';
 import HeatMapProfile from './HeatMap.jsx';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import './profile.css';
 
 function Profile() {
   const { currentUser, logout } = useAuth();
+  const { id: paramUserId } = useParams();
   const navigate = useNavigate();
+
+  const targetUserId = paramUserId || currentUser;
+  const isOwnProfile = !paramUserId || paramUserId === currentUser;
+
   const [user, setUser] = useState(null);
   const [repos, setRepos] = useState([]);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
+      setLoading(true);
+      setError('');
       try {
         const [profileRes, reposRes] = await Promise.all([
-          API.get(`/getProfile/${currentUser}`),
-          API.get(`/repo/user/${currentUser}`)
+          API.get(`/getProfile/${targetUserId}`),
+          API.get(`/repo/user/${targetUserId}`)
         ]);
         setUser(profileRes.data);
         setRepos(Array.isArray(reposRes.data.repositories) ? reposRes.data.repositories : []);
+
+        if (!isOwnProfile && currentUser) {
+          try {
+            const loggedInRes = await API.get(`/getProfile/${currentUser}`);
+            const followingList = loggedInRes.data?.followedUsers || [];
+            setIsFollowing(followingList.some(id => (id._id || id) === targetUserId));
+          } catch (err) {
+            console.error('Error checking followed status:', err);
+          }
+        }
       } catch (err) {
         console.error('Error fetching profile:', err);
         if (err.response && (err.response.status === 404 || err.response.status === 401 || err.response.status === 403)) {
-          logout();
-          navigate('/auth');
-          return;
+          if (isOwnProfile) {
+            logout();
+            navigate('/auth');
+            return;
+          }
         }
-        setError('Failed to load profile');
+        setError('Failed to load user profile');
       } finally {
         setLoading(false);
       }
     };
 
-    if (currentUser) {
+    if (targetUserId) {
       fetchProfile();
     }
-  }, [currentUser, logout, navigate]);
+  }, [targetUserId, currentUser, isOwnProfile, logout, navigate]);
+
+  const handleFollowToggle = async () => {
+    if (!currentUser) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      const res = await API.post(`/user/follow/${targetUserId}`);
+      setIsFollowing(res.data.isFollowing);
+    } catch (err) {
+      console.error('Error toggling follow:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -78,6 +112,15 @@ function Profile() {
             <p className="profile-email">{user?.email}</p>
           </div>
 
+          {!isOwnProfile && currentUser && (
+            <button
+              className={`btn-follow ${isFollowing ? 'following' : ''}`}
+              onClick={handleFollowToggle}
+            >
+              {isFollowing ? '✓ Following' : '+ Follow'}
+            </button>
+          )}
+
           <div className="profile-stats-grid">
             <div className="stat-card">
               <span className="stat-num">{repos.length}</span>
@@ -98,21 +141,23 @@ function Profile() {
         <main className="profile-main">
           {/* HeatMap Activity Section */}
           <section className="profile-section activity-section">
-            <HeatMapProfile />
+            <HeatMapProfile userId={targetUserId} />
           </section>
 
           {/* Repositories Showcase Section */}
           <section className="profile-section repos-section">
             <div className="section-title-bar">
               <h3>Repositories ({repos.length})</h3>
-              <Link to="/create" className="btn-new-repo">
-                + New Repository
-              </Link>
+              {isOwnProfile && (
+                <Link to="/create" className="btn-new-repo">
+                  + New Repository
+                </Link>
+              )}
             </div>
 
             {repos.length === 0 ? (
               <div className="empty-repos">
-                <p>No repositories found for this user.</p>
+                <p>No public repositories found for this user.</p>
               </div>
             ) : (
               <div className="profile-repos-grid">
