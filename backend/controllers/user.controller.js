@@ -49,11 +49,14 @@ const getUserProfile = async (req, res) => {
     const currentId = req.params.id;
 
     try {
-        const user = await User.findById(currentId);
+        const user = await User.findById(currentId).populate("followedUsers", "_id username email");
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.json(user);
+        const followers = await User.find({ followedUsers: currentId }).select("_id username email");
+        const userObj = user.toObject();
+        userObj.followers = followers;
+        res.json(userObj);
     } catch (error) {
         console.error("Error during fetching:", error);
         res.status(500).json({ message: "Server error" });

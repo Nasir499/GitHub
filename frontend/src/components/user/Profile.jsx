@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import API from '../../api.js';
 import { useAuth } from '../../useAuth.js';
 import Navbar from '../Navbar';
@@ -17,49 +17,50 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [repos, setRepos] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const [profileRes, reposRes] = await Promise.all([
-          API.get(`/getProfile/${targetUserId}`),
-          API.get(`/repo/user/${targetUserId}`)
-        ]);
-        setUser(profileRes.data);
-        setRepos(Array.isArray(reposRes.data.repositories) ? reposRes.data.repositories : []);
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [profileRes, reposRes] = await Promise.all([
+        API.get(`/getProfile/${targetUserId}`),
+        API.get(`/repo/user/${targetUserId}`)
+      ]);
+      setUser(profileRes.data);
+      setRepos(Array.isArray(reposRes.data.repositories) ? reposRes.data.repositories : []);
 
-        if (!isOwnProfile && currentUser) {
-          try {
-            const loggedInRes = await API.get(`/getProfile/${currentUser}`);
-            const followingList = loggedInRes.data?.followedUsers || [];
-            setIsFollowing(followingList.some(id => (id._id || id) === targetUserId));
-          } catch (err) {
-            console.error('Error checking followed status:', err);
-          }
+      if (!isOwnProfile && currentUser) {
+        try {
+          const loggedInRes = await API.get(`/getProfile/${currentUser}`);
+          const followingList = loggedInRes.data?.followedUsers || [];
+          setIsFollowing(followingList.some(id => (id._id || id) === targetUserId));
+        } catch (err) {
+          console.error('Error checking followed status:', err);
         }
-      } catch (err) {
-        console.error('Error fetching profile:', err);
-        if (err.response && (err.response.status === 404 || err.response.status === 401 || err.response.status === 403)) {
-          if (isOwnProfile) {
-            logout();
-            navigate('/auth');
-            return;
-          }
-        }
-        setError('Failed to load user profile');
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      if (err.response && (err.response.status === 404 || err.response.status === 401 || err.response.status === 403)) {
+        if (isOwnProfile) {
+          logout();
+          navigate('/auth');
+          return;
+        }
+      }
+      setError('Failed to load user profile');
+    } finally {
+      setLoading(false);
+    }
+  }, [targetUserId, currentUser, isOwnProfile, logout, navigate]);
 
+  useEffect(() => {
     if (targetUserId) {
       fetchProfile();
     }
-  }, [targetUserId, currentUser, isOwnProfile, logout, navigate]);
+  }, [targetUserId, fetchProfile]);
 
   const handleFollowToggle = async () => {
     if (!currentUser) {
@@ -70,6 +71,7 @@ function Profile() {
     try {
       const res = await API.post(`/user/follow/${targetUserId}`);
       setIsFollowing(res.data.isFollowing);
+      fetchProfile();
     } catch (err) {
       console.error('Error toggling follow:', err);
     }
@@ -95,6 +97,9 @@ function Profile() {
       </div>
     );
   }
+
+  const followersList = user?.followers || [];
+  const followingList = user?.followedUsers || [];
 
   return (
     <div className="profile-page">
@@ -122,65 +127,169 @@ function Profile() {
           )}
 
           <div className="profile-stats-grid">
-            <div className="stat-card">
-              <span className="stat-num">{repos.length}</span>
-              <span className="stat-text">Repositories</span>
+            <div
+              className={`stat-card ${activeTab === 'followers' ? 'active' : ''}`}
+              onClick={() => setActiveTab('followers')}
+            >
+              <span className="stat-num">{followersList.length}</span>
+              <span className="stat-text">Followers</span>
             </div>
-            <div className="stat-card">
-              <span className="stat-num">{user?.followedUsers?.length || 0}</span>
+            <div
+              className={`stat-card ${activeTab === 'following' ? 'active' : ''}`}
+              onClick={() => setActiveTab('following')}
+            >
+              <span className="stat-num">{followingList.length}</span>
               <span className="stat-text">Following</span>
             </div>
-            <div className="stat-card">
-              <span className="stat-num">{user?.starRepos?.length || 0}</span>
-              <span className="stat-text">Stars</span>
+            <div
+              className={`stat-card ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              <span className="stat-num">{repos.length}</span>
+              <span className="stat-text">Repositories</span>
             </div>
           </div>
         </aside>
 
         {/* Main Content Area */}
         <main className="profile-main">
-          {/* HeatMap Activity Section */}
-          <section className="profile-section activity-section">
-            <HeatMapProfile userId={targetUserId} />
-          </section>
+          {/* Navigation Tabs */}
+          <div className="profile-nav-tabs">
+            <button
+              className={`nav-tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              📁 Overview & Repositories <span className="tab-badge">{repos.length}</span>
+            </button>
+            <button
+              className={`nav-tab-btn ${activeTab === 'followers' ? 'active' : ''}`}
+              onClick={() => setActiveTab('followers')}
+            >
+              👥 Followers <span className="tab-badge">{followersList.length}</span>
+            </button>
+            <button
+              className={`nav-tab-btn ${activeTab === 'following' ? 'active' : ''}`}
+              onClick={() => setActiveTab('following')}
+            >
+              👤 Following <span className="tab-badge">{followingList.length}</span>
+            </button>
+          </div>
 
-          {/* Repositories Showcase Section */}
-          <section className="profile-section repos-section">
-            <div className="section-title-bar">
-              <h3>Repositories ({repos.length})</h3>
-              {isOwnProfile && (
-                <Link to="/create" className="btn-new-repo">
-                  + New Repository
-                </Link>
+          {/* Tab Content: Overview & Repositories */}
+          {activeTab === 'overview' && (
+            <>
+              <section className="profile-section activity-section">
+                <HeatMapProfile userId={targetUserId} />
+              </section>
+
+              <section className="profile-section repos-section">
+                <div className="section-title-bar">
+                  <h3>Repositories ({repos.length})</h3>
+                  {isOwnProfile && (
+                    <Link to="/create" className="btn-new-repo">
+                      + New Repository
+                    </Link>
+                  )}
+                </div>
+
+                {repos.length === 0 ? (
+                  <div className="empty-repos">
+                    <p>No public repositories found for this user.</p>
+                  </div>
+                ) : (
+                  <div className="profile-repos-grid">
+                    {repos.map((repo) => (
+                      <Link key={repo._id} to={`/repo/${repo._id}`} className="profile-repo-card">
+                        <div className="profile-repo-top">
+                          <h4 className="profile-repo-name">{repo.name}</h4>
+                          <span className={`visibility-badge ${repo.visibility ? 'public' : 'private'}`}>
+                            {repo.visibility ? 'Public' : 'Private'}
+                          </span>
+                        </div>
+                        <p className="profile-repo-desc">
+                          {repo.description || 'No description provided.'}
+                        </p>
+                        <div className="profile-repo-meta">
+                          <span className="lang-dot"></span>
+                          <span>JavaScript</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {/* Tab Content: Followers */}
+          {activeTab === 'followers' && (
+            <section className="profile-section users-list-section">
+              <div className="section-title-bar">
+                <h3>Followers ({followersList.length})</h3>
+              </div>
+
+              {followersList.length === 0 ? (
+                <div className="empty-state-card">
+                  <span className="empty-icon">👥</span>
+                  <p>This user has no followers yet.</p>
+                </div>
+              ) : (
+                <div className="user-cards-grid">
+                  {followersList.map((follower) => (
+                    <div key={follower._id} className="user-list-card">
+                      <div className="user-card-avatar">
+                        {follower.username?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="user-card-details">
+                        <Link to={`/user/${follower._id}`} className="user-card-username">
+                          {follower.username}
+                        </Link>
+                        <span className="user-card-email">{follower.email}</span>
+                      </div>
+                      <Link to={`/user/${follower._id}`} className="btn-user-action">
+                        View Profile
+                      </Link>
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
+            </section>
+          )}
 
-            {repos.length === 0 ? (
-              <div className="empty-repos">
-                <p>No public repositories found for this user.</p>
+          {/* Tab Content: Following */}
+          {activeTab === 'following' && (
+            <section className="profile-section users-list-section">
+              <div className="section-title-bar">
+                <h3>Following ({followingList.length})</h3>
               </div>
-            ) : (
-              <div className="profile-repos-grid">
-                {repos.map((repo) => (
-                  <Link key={repo._id} to={`/repo/${repo._id}`} className="profile-repo-card">
-                    <div className="profile-repo-top">
-                      <h4 className="profile-repo-name">{repo.name}</h4>
-                      <span className={`visibility-badge ${repo.visibility ? 'public' : 'private'}`}>
-                        {repo.visibility ? 'Public' : 'Private'}
-                      </span>
+
+              {followingList.length === 0 ? (
+                <div className="empty-state-card">
+                  <span className="empty-icon">👤</span>
+                  <p>This user is not following anyone yet.</p>
+                </div>
+              ) : (
+                <div className="user-cards-grid">
+                  {followingList.map((followed) => (
+                    <div key={followed._id} className="user-list-card">
+                      <div className="user-card-avatar">
+                        {followed.username?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="user-card-details">
+                        <Link to={`/user/${followed._id}`} className="user-card-username">
+                          {followed.username}
+                        </Link>
+                        <span className="user-card-email">{followed.email}</span>
+                      </div>
+                      <Link to={`/user/${followed._id}`} className="btn-user-action">
+                        View Profile
+                      </Link>
                     </div>
-                    <p className="profile-repo-desc">
-                      {repo.description || 'No description provided.'}
-                    </p>
-                    <div className="profile-repo-meta">
-                      <span className="lang-dot"></span>
-                      <span>JavaScript</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </main>
       </div>
     </div>
