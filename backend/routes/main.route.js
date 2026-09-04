@@ -29,13 +29,19 @@ $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Write-Host "🚀 Installing mygit CLI..." -ForegroundColor Cyan
 
+$installDir = "$env:USERPROFILE\\.mygit\\bin"
+if (!(Test-Path $installDir)) {
+    New-Item -ItemType Directory -Path $installDir -Force | Out-Null
+}
+
 $winApps = "$env:LOCALAPPDATA\\Microsoft\\WindowsApps"
 if (!(Test-Path $winApps)) {
     New-Item -ItemType Directory -Path $winApps -Force | Out-Null
 }
 
-$cliJs = "$winApps\\mygit-cli.js"
-$batPath = "$winApps\\mygit.bat"
+$cliJs = "$installDir\\mygit-cli.js"
+$batPath = "$installDir\\mygit.bat"
+$winBatPath = "$winApps\\mygit.bat"
 
 # Download standalone CLI script from server
 try {
@@ -45,9 +51,17 @@ try {
     Invoke-WebRequest -Uri $fallbackUrl -OutFile $cliJs -UseBasicParsing -MaximumRedirection 10
 }
 
-# Create batch wrapper executable in WindowsApps
+# Create batch wrapper executable in mygit bin and WindowsApps
 $cmdContent = '@echo off' + [Environment]::NewLine + 'node "' + $cliJs + '" %*'
 Set-Content -Path $batPath -Value $cmdContent -Force
+try { Set-Content -Path $winBatPath -Value $cmdContent -Force } catch {}
+
+# Add mygit bin to User PATH if not present
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($userPath -notlike "*$installDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$userPath;$installDir", "User")
+    $env:Path = "$env:Path;$installDir"
+}
 
 Write-Host "🎉 Successfully installed mygit CLI system-wide!" -ForegroundColor Green
 Write-Host "💡 You can now run 'mygit' in any terminal window on your machine!" -ForegroundColor Yellow
