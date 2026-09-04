@@ -57,11 +57,18 @@ const getUserProfile = async (req, res) => {
             currentObjId = currentId;
         }
 
-        const user = await User.findById(currentId).populate("followedUsers", "_id username email");
+        const user = await User.findById(currentId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
+        // Fetch followed users (following) explicitly by IDs
+        const followingIds = (user.followedUsers || []).map(id => (id._id ? id._id.toString() : id.toString()));
+        const followingUsers = await User.find({
+            _id: { $in: followingIds }
+        }).select("_id username email");
+
+        // Fetch followers explicitly
         const followers = await User.find({
             $or: [
                 { followedUsers: currentId },
@@ -70,8 +77,8 @@ const getUserProfile = async (req, res) => {
         }).select("_id username email");
 
         const userObj = user.toObject();
-        userObj.followedUsers = (userObj.followedUsers || []).filter(Boolean);
-        userObj.followers = (followers || []).filter(Boolean);
+        userObj.followedUsers = followingUsers;
+        userObj.followers = followers;
 
         res.json(userObj);
     } catch (error) {
@@ -225,6 +232,13 @@ const toggleFollowUser = async (req, res) => {
     }
 
     try {
+        let targetObjId;
+        try {
+            targetObjId = new mongoose.Types.ObjectId(targetUserId);
+        } catch {
+            targetObjId = targetUserId;
+        }
+
         const currentUserDoc = await User.findById(currentUserId);
         const targetUserDoc = await User.findById(targetUserId);
 
@@ -233,15 +247,15 @@ const toggleFollowUser = async (req, res) => {
         }
 
         const isFollowing = currentUserDoc.followedUsers.some(
-            (id) => id.toString() === targetUserId.toString()
+            (id) => (id._id ? id._id.toString() : id.toString()) === targetUserId.toString()
         );
 
         if (isFollowing) {
             currentUserDoc.followedUsers = currentUserDoc.followedUsers.filter(
-                (id) => id.toString() !== targetUserId.toString()
+                (id) => (id._id ? id._id.toString() : id.toString()) !== targetUserId.toString()
             );
         } else {
-            currentUserDoc.followedUsers.push(targetUserId);
+            currentUserDoc.followedUsers.push(targetObjId);
         }
 
         await currentUserDoc.save();

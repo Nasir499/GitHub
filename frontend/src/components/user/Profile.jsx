@@ -240,7 +240,7 @@ function Profile() {
                 <div className="user-cards-grid">
                   {followersList.map((follower) => {
                     const fId = follower._id || follower;
-                    const name = follower.username || "User";
+                    const name = follower.username || follower.email?.split('@')[0] || "Developer";
                     const email = follower.email || "";
                     return (
                       <div key={fId} className="user-list-card">
@@ -280,7 +280,7 @@ function Profile() {
                 <div className="user-cards-grid">
                   {followingList.map((followed) => {
                     const fId = followed._id || followed;
-                    const name = followed.username || "User";
+                    const name = followed.username || followed.email?.split('@')[0] || "Developer";
                     const email = followed.email || "";
                     return (
                       <div key={fId} className="user-list-card">
