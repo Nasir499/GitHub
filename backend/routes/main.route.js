@@ -26,6 +26,7 @@ mainrouter.get('/install.ps1', (req, res) => {
 
     const psScript = `# Automated mygit CLI installer for Windows
 $ErrorActionPreference = 'Stop'
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Write-Host "🚀 Installing mygit CLI..." -ForegroundColor Cyan
 
 $winApps = "$env:LOCALAPPDATA\\Microsoft\\WindowsApps"
@@ -37,7 +38,12 @@ $cliJs = "$winApps\\mygit-cli.js"
 $batPath = "$winApps\\mygit.bat"
 
 # Download standalone CLI script from server
-Invoke-WebRequest -Uri "${backendUrl}/cli-bundle.js" -OutFile $cliJs -UseBasicParsing -MaximumRedirection 10
+try {
+    Invoke-WebRequest -Uri "${backendUrl}/cli-bundle.js" -OutFile $cliJs -UseBasicParsing -MaximumRedirection 10
+} catch {
+    $fallbackUrl = "${backendUrl}".Replace("http://", "https://") + "/cli-bundle.js"
+    Invoke-WebRequest -Uri $fallbackUrl -OutFile $cliJs -UseBasicParsing -MaximumRedirection 10
+}
 
 # Create batch wrapper executable in WindowsApps
 $cmdContent = '@echo off' + [Environment]::NewLine + 'node "' + $cliJs + '" %*'
