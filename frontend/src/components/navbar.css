@@ -108,3 +108,117 @@
   background-color: rgba(248, 81, 73, 0.15);
   border-color: #f85149;
 }
+
+/* User Search Bar & Dropdown */
+.navbar-center {
+  flex-grow: 1;
+  max-width: 380px;
+  margin: 0 20px;
+  position: relative;
+}
+
+.navbar-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.navbar-search-input {
+  width: 100%;
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 6px 12px 6px 32px;
+  color: #c9d1d9;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.navbar-search-input:focus {
+  border-color: #58a6ff;
+  background-color: #161b22;
+  box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.15);
+}
+
+.search-icon-inside {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8b949e;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.user-search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 6px 0;
+}
+
+.user-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  color: #c9d1d9;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.user-search-item:hover {
+  background-color: #21262d;
+  color: #58a6ff;
+  text-decoration: none;
+}
+
+.user-avatar-mini {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1f6feb, #238636);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-info-mini {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.user-name-mini {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f0f6fc;
+}
+
+.user-email-mini {
+  font-size: 11px;
+  color: #8b949e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-search-results {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #8b949e;
+  text-align: center;
+}
