@@ -22,7 +22,7 @@ A full-stack GitHub clone built with **React**, **Node.js/Express**, **MongoDB**
 - **Database Architecture**: MongoDB storing users, repository metadata, and issue collections.
 
 ### ⚡ Custom Git CLI (`mygit`)
-- **One-Command Automated Installer**: Installs globally on Windows via PowerShell (`irm http://localhost:3000/install.ps1 | iex`).
+- **One-Command Automated Installer**: Installs globally on Windows via PowerShell (`powershell -c "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; irm http://localhost:3000/install.ps1 | iex"`).
 - **Command Set**:
   - `mygit init <repoId>` — Initializes local repository tracking linked to a specific web repository.
   - `mygit add <file|.>` — Stages individual files or entire directory trees recursively into `.mygit/staging/`.
@@ -80,7 +80,7 @@ npm run dev
 Run the following command in PowerShell:
 
 ```powershell
-powershell -c "irm http://localhost:3000/install.ps1 | iex"
+powershell -c "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; irm http://localhost:3000/install.ps1 | iex"
 ```
 
 ### Step 2: Initialize & Push Code from Any Local Project
