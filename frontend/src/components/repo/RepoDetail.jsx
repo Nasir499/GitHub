@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import API from '../../api.js';
 import { useAuth } from '../../Authcontext.jsx';
 import Navbar from '../Navbar';
+import { getHighlightedCodeHtml } from '../../utils/syntaxHighlighter.js';
 import './repoDetail.css';
 
 function RepoDetail() {
@@ -18,6 +19,20 @@ function RepoDetail() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [currentFolder, setCurrentFolder] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyCode = () => {
+    if (!fileContent) return;
+    navigator.clipboard.writeText(fileContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getFileExtension = (filename) => {
+    if (!filename) return 'TXT';
+    const parts = filename.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : 'TXT';
+  };
 
   const fetchRepoAndFiles = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
@@ -46,11 +61,12 @@ function RepoDetail() {
     setSelectedFile(fileName);
     setLoadingFileContent(true);
     try {
-      const res = await API.get(`/repo/s3-content?key=${encodeURIComponent(fileKey)}`);
+      const res = await API.get(`/repo/s3-content?key=${encodeURIComponent(fileKey)}&repoId=${id}`);
       setFileContent(res.data.content);
     } catch (err) {
       console.error('Error loading file content:', err);
-      setFileContent('Error loading file content from S3.');
+      const serverMsg = err.response?.data?.message || err.message || 'Error loading file content from S3.';
+      setFileContent(`⚠️ Unable to load file content.\nReason: ${serverMsg}`);
     } finally {
       setLoadingFileContent(false);
     }
@@ -157,6 +173,8 @@ function RepoDetail() {
 
   const folderParts = currentFolder ? currentFolder.split('/') : [];
 
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
   return (
     <div className="repo-page">
       <Navbar />
@@ -198,7 +216,7 @@ function RepoDetail() {
               <div className="step-content">
                 <h5>Install mygit CLI on your computer (Run once in PowerShell)</h5>
                 <div className="cli-code-block">
-                  <code>powershell -c "irm http://localhost:3000/install.ps1 | iex"</code>
+                  <code>powershell -c "irm {apiBaseUrl}/install.ps1 | iex"</code>
                 </div>
               </div>
             </div>
@@ -343,18 +361,53 @@ function RepoDetail() {
       {/* Code Viewer Modal */}
       {selectedFile && (
         <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content code-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>📄 {selectedFile}</h3>
-              <button className="modal-close-btn" onClick={closeModal}>&times;</button>
+              <div className="modal-title-box">
+                <span className="modal-file-icon">📄</span>
+                <h3 className="modal-file-title">{selectedFile}</h3>
+                <span className="file-ext-badge">{getFileExtension(selectedFile)}</span>
+              </div>
+              <div className="modal-header-actions">
+                <button
+                  className={`btn-copy-code ${copied ? 'copied' : ''}`}
+                  onClick={handleCopyCode}
+                  title="Copy code to clipboard"
+                >
+                  {copied ? '✓ Copied!' : '📋 Copy Code'}
+                </button>
+                <button className="modal-close-btn" onClick={closeModal}>&times;</button>
+              </div>
             </div>
-            <div className="modal-body">
+
+            <div className="modal-body code-modal-body">
               {loadingFileContent ? (
-                <div className="code-loading">Loading file from S3...</div>
+                <div className="code-loading">
+                  <div className="spinner"></div>
+                  <p>Fetching file content from AWS S3...</p>
+                </div>
               ) : (
-                <pre className="code-viewer">{fileContent}</pre>
+                <div className="code-viewer-wrapper">
+                  <div className="code-line-numbers">
+                    {fileContent.split('\n').map((_, idx) => (
+                      <span key={idx} className="line-num">{idx + 1}</span>
+                    ))}
+                  </div>
+                  <pre
+                    className="code-content-area"
+                    dangerouslySetInnerHTML={{ __html: getHighlightedCodeHtml(fileContent, selectedFile) }}
+                  />
+                </div>
               )}
             </div>
+
+            {!loadingFileContent && fileContent && (
+              <div className="modal-footer">
+                <span className="file-stat">{fileContent.split('\n').length} lines</span>
+                <span className="stat-separator">•</span>
+                <span className="file-stat">{(new Blob([fileContent]).size / 1024).toFixed(2)} KB</span>
+              </div>
+            )}
           </div>
         </div>
       )}

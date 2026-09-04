@@ -147,6 +147,23 @@ const fetchRepositoryByName = async (req, res) => {
         if (!repository) {
             return res.status(404).json({ message: "Repository not found" });
         }
+
+        if (!repository.visibility) {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) {
+                return res.status(404).json({ message: "Repository not found" });
+            }
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+                if (repository.owner._id.toString() !== decoded.id) {
+                    return res.status(404).json({ message: "Repository not found" });
+                }
+            } catch (err) {
+                return res.status(404).json({ message: "Repository not found" });
+            }
+        }
+
         res.json(repository);
     } catch (error) {
         console.error("Error during fetching repo by name:", error);
@@ -195,6 +212,27 @@ const toggleVisibilityById = async (req, res) => {
 const fetchRepositoryS3Files = async (req, res) => {
     const repoId = req.params.id;
     try {
+        const repository = await Repository.findById(repoId);
+        if (!repository) {
+            return res.status(404).json({ message: "Repository not found" });
+        }
+
+        if (!repository.visibility) {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) {
+                return res.status(404).json({ message: "Repository not found" });
+            }
+            try {
+                const token = authHeader.split(' ')[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+                if (repository.owner._id ? repository.owner._id.toString() !== decoded.id : repository.owner.toString() !== decoded.id) {
+                    return res.status(404).json({ message: "Repository not found" });
+                }
+            } catch (err) {
+                return res.status(404).json({ message: "Repository not found" });
+            }
+        }
+
         const prefix = `repos/${repoId}/`;
         const command = new ListObjectsV2Command({
             Bucket: S3_BUCKET,
@@ -210,7 +248,6 @@ const fetchRepositoryS3Files = async (req, res) => {
             .filter(item => !item.Key.endsWith('commit.json') && !item.Key.endsWith('/'))
             .map(item => {
                 const parts = item.Key.split('/');
-                // Expected format: repos/<repoId>/commits/<commitId>/<relativePath>
                 const commitId = parts.length > 3 ? parts[3] : '';
                 const relativePath = parts.length > 4 ? parts.slice(4).join('/') : parts[parts.length - 1];
                 return {
@@ -229,14 +266,41 @@ const fetchRepositoryS3Files = async (req, res) => {
     }
 };
 
-// Fetch single file content from S3
+// Fetch single file content from S3 with path and repository authorization check
 const fetchS3FileContent = async (req, res) => {
     const key = req.query.key;
+    const reqRepoId = req.query.repoId;
     if (!key) {
         return res.status(400).json({ message: "Key parameter is required" });
     }
 
+    let repoId = reqRepoId;
+    const parts = key.split('/');
+    if (parts[0] === 'repos' && parts[1]) {
+        repoId = parts[1];
+    }
+
     try {
+        if (repoId) {
+            const repository = await Repository.findById(repoId);
+            if (repository && !repository.visibility) {
+                const authHeader = req.headers.authorization;
+                if (!authHeader) {
+                    return res.status(403).json({ message: "Access denied" });
+                }
+                try {
+                    const token = authHeader.split(' ')[1];
+                    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+                    const ownerId = repository.owner._id ? repository.owner._id.toString() : repository.owner.toString();
+                    if (ownerId !== decoded.id) {
+                        return res.status(403).json({ message: "Access denied" });
+                    }
+                } catch (err) {
+                    return res.status(403).json({ message: "Access denied" });
+                }
+            }
+        }
+
         const command = new GetObjectCommand({
             Bucket: S3_BUCKET,
             Key: key
@@ -292,6 +356,8 @@ const pushRepoFiles = async (req, res) => {
 
         // Upload files to S3 in parallel chunks for fast push performance
         const CONCURRENCY = 15;
+        const newPaths = new Set();
+
         for (let i = 0; i < files.length; i += CONCURRENCY) {
             const batch = files.slice(i, i + CONCURRENCY);
             await Promise.all(batch.map(async (fileItem) => {
@@ -306,11 +372,15 @@ const pushRepoFiles = async (req, res) => {
                     Body: Buffer.from(content || '', 'utf-8')
                 }));
 
-                if (!repository.content.includes(cleanPath)) {
-                    repository.content.push(cleanPath);
-                }
+                newPaths.add(cleanPath);
             }));
         }
+
+        newPaths.forEach(cleanPath => {
+            if (!repository.content.includes(cleanPath)) {
+                repository.content.push(cleanPath);
+            }
+        });
 
         await repository.save();
 
