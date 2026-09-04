@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import API from '../../api.js';
-import { useAuth } from '../../Authcontext.jsx';
+import { useAuth } from '../../useAuth.js';
 import Navbar from '../Navbar';
 import './issue.css';
 

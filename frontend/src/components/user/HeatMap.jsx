@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API from "../../api.js";
-import { useAuth } from "../../Authcontext.jsx";
+import { useAuth } from "../../useAuth.js";
 
 const HeatMapProfile = ({ userId: propUserId }) => {
   const { currentUser } = useAuth();

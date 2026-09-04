@@ -1,11 +1,11 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../Authcontext.jsx";
+import { useAuth } from "../useAuth.js";
 import logo from "../assets/github-mark-white.svg";
 import "./navbar.css";
 
 const Navbar = () => {
-  const { logout, currentUser } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {

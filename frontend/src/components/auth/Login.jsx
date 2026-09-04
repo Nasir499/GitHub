@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import API from "../../api.js";
-import { useAuth } from "../../Authcontext.jsx";
+import { useAuth } from "../../useAuth.js";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../../assets/github-mark-white.svg";
 import "./auth.css";
@@ -9,14 +9,14 @@ const Login = () => {
   const { logout, login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     logout();
-  }, []);
+  }, [logout]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -25,7 +25,7 @@ const Login = () => {
     try {
       setLoading(true);
       const res = await API.post("/login", {
-        email,
+        username,
         password,
       });
 
@@ -52,14 +52,14 @@ const Login = () => {
 
           <form onSubmit={handleLogin} className="auth-form">
             <div className="form-field">
-              <label htmlFor="email">Email address</label>
+              <label htmlFor="username">Username or email address</label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                placeholder="user@example.com"
+                placeholder="username or email"
               />
             </div>
 

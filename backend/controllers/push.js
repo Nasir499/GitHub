@@ -48,6 +48,14 @@ async function pushRepo() {
         // No config
       }
 
+      if (!token) {
+        const globalCredPath = path.join(process.env.USERPROFILE || process.env.HOME || '', '.mygit', 'credentials.json');
+        try {
+          const credData = JSON.parse(await fs.readFile(globalCredPath, 'utf-8'));
+          token = credData.token;
+        } catch {}
+      }
+
       let pushedCommits = [];
       try {
         const trackData = await fs.readFile(pushTrackPath, 'utf-8');

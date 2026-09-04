@@ -58,18 +58,18 @@ yargs(hideBin(process.argv))
 
     function startServer(){
         const app = express()
-        const port = process.env.PORT || 8000;
+        const port = process.env.PORT || 3000;
 
         app.use(express.json({ limit: '50mb' }))
         app.use(express.urlencoded({ limit: '50mb', extended: true }))
         app.use(morgan('tiny'))
 
-        const mongoUrl = process.env.MONGODB_URI;
+        const mongoUrl = process.env.MONGODB_URI ;
 
         mongoose
         .connect(mongoUrl)
         .then(()=>console.log("MongoDB Connected"))
-        .catch((err)=>console.error(err));
+        .catch((err)=>console.error("MongoDB Connection Error:", err));
 
        app.use(cors({origin:'*'}))
 

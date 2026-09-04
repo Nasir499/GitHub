@@ -1,10 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
-
-const AuthContext = createContext();
-
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+import React, { useState, useEffect, useCallback } from "react";
+import { AuthContext } from "./AuthContextObject";
 
 // Simple JWT expiry check (decode payload without verification)
 const isTokenExpired = (token) => {
@@ -35,17 +30,17 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    const login = (token, userId) => {
+    const login = useCallback((token, userId) => {
         localStorage.setItem('token', token);
         localStorage.setItem('userId', userId);
         setCurrentUser(userId);
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem('token');
         localStorage.removeItem('userId');
         setCurrentUser(null);
-    };
+    }, []);
 
     const value = {
         currentUser,

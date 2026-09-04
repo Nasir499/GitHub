@@ -2,7 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 async function revertRepo(argv) {
-   const commitId = argv.commitId;
+   const commitId = typeof argv === 'object' && argv !== null ? argv.commitId : argv;
    const repoPath = path.resolve(process.cwd(), ".mygit");
    const commitsPath = path.join(repoPath, "commits");
    const commitDir = path.join(commitsPath, commitId);

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api.js';
-import { useAuth } from '../../Authcontext.jsx';
+import { useAuth } from '../../useAuth.js';
 import Navbar from '../Navbar';
 import HeatMapProfile from './HeatMap.jsx';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './profile.css';
 
 function Profile() {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [repos, setRepos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,11 @@ function Profile() {
         setRepos(Array.isArray(reposRes.data.repositories) ? reposRes.data.repositories : []);
       } catch (err) {
         console.error('Error fetching profile:', err);
+        if (err.response && (err.response.status === 404 || err.response.status === 401 || err.response.status === 403)) {
+          logout();
+          navigate('/auth');
+          return;
+        }
         setError('Failed to load profile');
       } finally {
         setLoading(false);
@@ -33,7 +39,7 @@ function Profile() {
     if (currentUser) {
       fetchProfile();
     }
-  }, [currentUser]);
+  }, [currentUser, logout, navigate]);
 
   if (loading) {
     return (

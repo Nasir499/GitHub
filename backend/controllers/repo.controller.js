@@ -76,6 +76,7 @@ const deleteRepository = async (req, res) => {
 
         await Issue.deleteMany({ repository: id });
         await User.findByIdAndUpdate(repository.owner, { $pull: { repositories: id } });
+        await User.updateMany({}, { $pull: { starRepos: id } });
         await Repository.findByIdAndDelete(id);
 
         // Clean up S3 objects for this repository
@@ -125,7 +126,8 @@ const fetchRepositoryById = async (req, res) => {
             try {
                 const token = authHeader.split(' ')[1];
                 const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-                if (repository.owner._id.toString() !== decoded.id) {
+                const ownerId = repository.owner?._id ? repository.owner._id.toString() : repository.owner?.toString();
+                if (!ownerId || ownerId !== decoded.id) {
                     return res.status(404).json({ message: "Repository not found" });
                 }
             } catch (err) {
@@ -156,7 +158,8 @@ const fetchRepositoryByName = async (req, res) => {
             try {
                 const token = authHeader.split(' ')[1];
                 const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-                if (repository.owner._id.toString() !== decoded.id) {
+                const ownerId = repository.owner?._id ? repository.owner._id.toString() : repository.owner?.toString();
+                if (!ownerId || ownerId !== decoded.id) {
                     return res.status(404).json({ message: "Repository not found" });
                 }
             } catch (err) {
@@ -223,9 +226,8 @@ const fetchRepositoryS3Files = async (req, res) => {
                 return res.status(404).json({ message: "Repository not found" });
             }
             try {
-                const token = authHeader.split(' ')[1];
-                const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-                if (repository.owner._id ? repository.owner._id.toString() !== decoded.id : repository.owner.toString() !== decoded.id) {
+                const ownerId = repository.owner?._id ? repository.owner._id.toString() : repository.owner?.toString();
+                if (!ownerId || ownerId !== decoded.id) {
                     return res.status(404).json({ message: "Repository not found" });
                 }
             } catch (err) {
@@ -290,9 +292,8 @@ const fetchS3FileContent = async (req, res) => {
                 }
                 try {
                     const token = authHeader.split(' ')[1];
-                    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-                    const ownerId = repository.owner._id ? repository.owner._id.toString() : repository.owner.toString();
-                    if (ownerId !== decoded.id) {
+                    const ownerId = repository.owner?._id ? repository.owner._id.toString() : repository.owner?.toString();
+                    if (!ownerId || ownerId !== decoded.id) {
                         return res.status(403).json({ message: "Access denied" });
                     }
                 } catch (err) {

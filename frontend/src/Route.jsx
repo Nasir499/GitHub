@@ -13,7 +13,7 @@ import IssueDetail from './components/issue/IssueDetail.jsx'
 import CreateIssue from './components/issue/CreateIssue.jsx'
 
 // AuthContext
-import { useAuth } from "./Authcontext";
+import { useAuth } from "./useAuth";
 
 const ProjectRoutes = () => {
     const { currentUser, setCurrentUser } = useAuth();

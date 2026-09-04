@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import API from "../../api.js";
-import { useAuth } from "../../Authcontext.jsx";
+import { useAuth } from "../../useAuth.js";
 import { useNavigate, Link } from "react-router-dom";
 import logo from "../../assets/github-mark-white.svg";
 import "./auth.css";

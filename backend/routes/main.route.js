@@ -99,18 +99,64 @@ Commands:
 
     const repoPath = path.resolve(process.cwd(), '.mygit');
 
-    if (command === 'init') {
+    if (command === 'login') {
+        const readline = require('readline');
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        const ask = (q) => new Promise(res => rl.question(q, res));
+
+        const username = await ask('Username or Email: ');
+        const password = await ask('Password: ');
+        rl.close();
+
+        try {
+            const resStr = await postJson(\`\${API_URL}/login\`, JSON.stringify({ username, password }));
+            const resData = JSON.parse(resStr);
+            if (resData.token) {
+                const globalDir = path.join(process.env.USERPROFILE || process.env.HOME || '', '.mygit');
+                fs.mkdirSync(globalDir, { recursive: true });
+                fs.writeFileSync(path.join(globalDir, 'credentials.json'), JSON.stringify({ token: resData.token, userId: resData.userId }, null, 2));
+                console.log('\\n🎉 Successfully logged in! Credentials stored securely in user profile.');
+            } else {
+                console.error('\\n❌ Login failed: Invalid credentials');
+            }
+        } catch (err) {
+            console.error(\`\\n❌ Login failed: \${err.message}\`);
+        }
+    }
+    else if (command === 'init') {
         const repoId = param;
+        const token = args[2];
         if (!repoId) {
-            console.error('Error: Please provide a Repository ID (e.g. mygit init <repoId>)');
+            console.error('Error: Please provide a Repository ID (e.g. mygit init <repoId> [token])');
             process.exit(1);
         }
         fs.mkdirSync(path.join(repoPath, 'commits'), { recursive: true });
         fs.mkdirSync(path.join(repoPath, 'staging'), { recursive: true });
-        fs.writeFileSync(path.join(repoPath, 'config.json'), JSON.stringify({ repoId, apiUrl: API_URL }, null, 2));
+        const configObj = { repoId, apiUrl: API_URL };
+        if (token) configObj.token = token;
+        fs.writeFileSync(path.join(repoPath, 'config.json'), JSON.stringify(configObj, null, 2));
         fs.writeFileSync(path.join(repoPath, 'HEAD'), JSON.stringify({ current: null, branch: 'main' }, null, 2));
         console.log(\`Repository initialized successfully for repo: \${repoId}\`);
     } 
+    else if (command === 'auth') {
+        const token = param;
+        if (!token) {
+            console.error('Error: Please provide a JWT token (e.g. mygit auth <token>)');
+            process.exit(1);
+        }
+        let configObj = { apiUrl: API_URL };
+        const configPath = path.join(repoPath, 'config.json');
+        if (fs.existsSync(configPath)) {
+            try { configObj = JSON.parse(fs.readFileSync(configPath, 'utf-8')); } catch(e){}
+        }
+        configObj.token = token;
+        fs.writeFileSync(configPath, JSON.stringify(configObj, null, 2));
+        console.log('🎉 Auth token saved successfully to local repository config!');
+    }
     else if (command === 'add') {
         const fileTarget = param || '.';
         const stagingPath = path.join(repoPath, 'staging');
@@ -121,11 +167,16 @@ Commands:
             console.log('All files added to staging area successfully');
         } else {
             const targetAbs = path.resolve(process.cwd(), fileTarget);
-            const rel = path.relative(process.cwd(), targetAbs);
-            const dest = path.join(stagingPath, rel);
-            fs.mkdirSync(path.dirname(dest), { recursive: true });
-            fs.copyFileSync(targetAbs, dest);
-            console.log(\`File \${fileTarget} added to staging area successfully\`);
+            if (fs.existsSync(targetAbs) && fs.statSync(targetAbs).isDirectory()) {
+                stageDir(targetAbs, process.cwd(), stagingPath);
+                console.log(\`Directory \${fileTarget} added to staging area successfully\`);
+            } else {
+                const rel = path.relative(process.cwd(), targetAbs);
+                const dest = path.join(stagingPath, rel);
+                fs.mkdirSync(path.dirname(dest), { recursive: true });
+                fs.copyFileSync(targetAbs, dest);
+                console.log(\`File \${fileTarget} added to staging area successfully\`);
+            }
         }
     } 
     else if (command === 'commit') {
@@ -166,6 +217,17 @@ Commands:
 
         const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
         const repoId = configData.repoId;
+        let token = configData.token || process.env.MYGIT_TOKEN;
+
+        if (!token) {
+            const globalCredPath = path.join(process.env.USERPROFILE || process.env.HOME || '', '.mygit', 'credentials.json');
+            if (fs.existsSync(globalCredPath)) {
+                try {
+                    const credData = JSON.parse(fs.readFileSync(globalCredPath, 'utf-8'));
+                    token = credData.token;
+                } catch(e){}
+            }
+        }
 
         let pushedCommits = [];
         if (fs.existsSync(pushTrackPath)) {
@@ -205,7 +267,7 @@ Commands:
             });
 
             try {
-                await postJson(\`\${API_URL}/repo/\${repoId}/push\`, postData);
+                await postJson(\`\${API_URL}/repo/\${repoId}/push\`, postData, token);
                 pushedCommits.push(commitDir);
             } catch (err) {
                 console.error(\`\\n❌ Push failed: \${err.message}\`);
@@ -269,16 +331,20 @@ function generateUUID() {
     });
 }
 
-function postJson(urlStr, data) {
+function postJson(urlStr, data, token = null) {
     return new Promise((resolve, reject) => {
         const url = new URL(urlStr);
         const lib = url.protocol === 'https:' ? https : http;
+        const headers = {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data)
+        };
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
         const req = lib.request(urlStr, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(data)
-            }
+            headers
         }, (res) => {
             let body = '';
             res.on('data', chunk => body += chunk);

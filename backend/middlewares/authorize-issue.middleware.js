@@ -1,4 +1,5 @@
 import Issue from '../models/issue.model.js';
+import Repository from '../models/repo.model.js';
 
 const authorizeIssueAuthor = (paramName = 'id') => {
     return async (req, res, next) => {
@@ -15,8 +16,13 @@ const authorizeIssueAuthor = (paramName = 'id') => {
                 return res.status(404).json({ message: 'Issue not found.' });
             }
 
-            if (issue.author.toString() !== userId.toString()) {
-                return res.status(403).json({ message: 'Access denied. You are not the author of this issue.' });
+            const repository = await Repository.findById(issue.repository);
+
+            const isAuthor = issue.author && issue.author.toString() === userId.toString();
+            const isRepoOwner = repository && repository.owner.toString() === userId.toString();
+
+            if (!isAuthor && !isRepoOwner) {
+                return res.status(403).json({ message: 'Access denied. You are not authorized to modify this issue.' });
             }
 
             next();

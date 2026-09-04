@@ -117,6 +117,15 @@ const deleteUserProfile = async (req, res) => {
         await Issue.deleteMany({ repository: { $in: repoIds } });
         await Repository.deleteMany({ owner: currentId });
         await Issue.deleteMany({ author: currentId });
+        await User.updateMany(
+            {},
+            {
+                $pull: {
+                    followedUsers: currentId,
+                    starRepos: { $in: repoIds }
+                }
+            }
+        );
 
         res.json({ message: "User deleted" });
     } catch (error) {
@@ -126,14 +135,17 @@ const deleteUserProfile = async (req, res) => {
 };
 
 const login = async (req, res) => {
-    const { email, password } = req.body;
+    const { username, email, password } = req.body;
+    const identifier = username || email;
 
     try {
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email and password are required" });
+        if (!identifier || !password) {
+            return res.status(400).json({ message: "Username and password are required" });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({
+            $or: [{ username: identifier }, { email: identifier }]
+        });
         if (!user) {
             return res.status(400).json({ message: "Invalid credentials" });
         }

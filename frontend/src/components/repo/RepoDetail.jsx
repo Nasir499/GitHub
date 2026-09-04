@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import API from '../../api.js';
-import { useAuth } from '../../Authcontext.jsx';
+import { useAuth } from '../../useAuth.js';
 import Navbar from '../Navbar';
-import { getHighlightedCodeHtml } from '../../utils/syntaxHighlighter.js';
+import { getHighlightedCodeLines } from '../../utils/syntaxHighlighter.js';
 import './repoDetail.css';
 
 function RepoDetail() {
@@ -214,9 +214,10 @@ function RepoDetail() {
             <div className="cli-step">
               <span className="step-number">1</span>
               <div className="step-content">
-                <h5>Install mygit CLI on your computer (Run once in PowerShell)</h5>
+                <h5>Install mygit CLI & log in to your account (Run once per computer)</h5>
                 <div className="cli-code-block">
                   <code>powershell -c "irm {apiBaseUrl}/install.ps1 | iex"</code>
+                  <code>mygit login</code>
                 </div>
               </div>
             </div>
@@ -388,15 +389,19 @@ function RepoDetail() {
                 </div>
               ) : (
                 <div className="code-viewer-wrapper">
-                  <div className="code-line-numbers">
-                    {fileContent.split('\n').map((_, idx) => (
-                      <span key={idx} className="line-num">{idx + 1}</span>
-                    ))}
-                  </div>
-                  <pre
-                    className="code-content-area"
-                    dangerouslySetInnerHTML={{ __html: getHighlightedCodeHtml(fileContent, selectedFile) }}
-                  />
+                  <table className="code-table">
+                    <tbody>
+                      {getHighlightedCodeLines(fileContent, selectedFile).map((lineHtml, idx) => (
+                        <tr key={idx} className="code-line-row">
+                          <td className="line-num-td">{idx + 1}</td>
+                          <td
+                            className="line-code-td"
+                            dangerouslySetInnerHTML={{ __html: lineHtml || ' ' }}
+                          />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

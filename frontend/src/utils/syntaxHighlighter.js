@@ -27,8 +27,8 @@ const LITERALS = new Set([
   'true', 'false', 'null', 'undefined', 'NaN', 'Infinity', 'True', 'False', 'None'
 ]);
 
-export function getHighlightedCodeHtml(code, filename = '') {
-  if (!code) return '';
+export function getHighlightedCodeLines(code, filename = '') {
+  if (!code) return [];
 
   const ext = (filename.split('.').pop() || '').toLowerCase();
 
@@ -37,20 +37,24 @@ export function getHighlightedCodeHtml(code, filename = '') {
     try {
       const parsed = JSON.parse(code);
       const jsonStr = JSON.stringify(parsed, null, 2);
-      return highlightJson(jsonStr);
+      return highlightJson(jsonStr).split('\n');
     } catch {
       // Fallback to text highlight
     }
   }
 
-  return highlightCodeLines(code);
+  return highlightCodeLinesArray(code);
 }
 
-function highlightCodeLines(code) {
+export function getHighlightedCodeHtml(code, filename = '') {
+  return getHighlightedCodeLines(code, filename).join('\n');
+}
+
+function highlightCodeLinesArray(code) {
   const lines = code.split('\n');
   let inBlockComment = false;
 
-  const highlightedLines = lines.map((line) => {
+  return lines.map((line) => {
     let result = '';
     let i = 0;
 
@@ -180,12 +184,10 @@ function highlightCodeLines(code) {
 
     return result;
   });
-
-  return highlightedLines.join('\n');
 }
 
 function highlightJson(jsonStr) {
-  return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+  return jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (match) => {
     let cls = 'number';
     if (/^"/.test(match)) {
       if (/:$/.test(match)) {
